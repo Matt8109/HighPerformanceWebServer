@@ -67,10 +67,12 @@ def build(bld):
 
     # header only libs; just documenting
     # lock.hpp
+    # unit_test.hpp
 
     bld.new_task_gen( features = 'cxx cstaticlib',
                       source = """ log_message.cpp
                                    log_writer.cpp
+                                   param_map.cpp
                                """,
                       includes = '.. .',
                       uselib = 'PTHREAD',
@@ -83,8 +85,24 @@ def build(bld):
     # tests / benchmarks
     #
 
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'param_map_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'logging',
+                      target = 'param_map_test',
+                      unit_test = 1
+                    )
 
-    # empty, for now
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'demo_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'logging',
+                      target = 'demo_test',
+                      unit_test = 1
+                    )
 
     #****************************************
     # Binaries
