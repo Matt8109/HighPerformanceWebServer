@@ -81,7 +81,8 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
-                      source = """ list_set.cpp
+                      source = """ circular_buffer.cpp
+                                   list_set.cpp
                                """,
                       includes = '.. .',
                       uselib = 'PTHREAD',
@@ -94,6 +95,16 @@ def build(bld):
     #****************************************
     # tests / benchmarks
     #
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'circular_buffer_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'base',
+                      target = 'circular_buffer_test',
+                      unit_test = 1
+
+                    )
 
     bld.new_task_gen( features = 'cxx cprogram',
                       source = 'demo_test.cpp',
