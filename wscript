@@ -80,10 +80,39 @@ def build(bld):
                       name = 'logging'
                     )
 
+    bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ list_set.cpp
+                               """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      uselib_local = 'logging',
+                      target = 'base',
+                      name = 'base'
+                    )
+
 
     #****************************************
     # tests / benchmarks
     #
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'demo_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'logging',
+                      target = 'demo_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'list_set_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'base',
+                      target = 'list_set_test',
+                      unit_test = 1
+
+                    )
 
     bld.new_task_gen( features = 'cxx cprogram',
                       source = 'param_map_test.cpp',
@@ -94,15 +123,6 @@ def build(bld):
                       unit_test = 1
                     )
 
-
-    bld.new_task_gen( features = 'cxx cprogram',
-                      source = 'demo_test.cpp',
-                      includes = '.. .',
-                      uselib = '',
-                      uselib_local = 'logging',
-                      target = 'demo_test',
-                      unit_test = 1
-                    )
 
     #****************************************
     # Binaries
