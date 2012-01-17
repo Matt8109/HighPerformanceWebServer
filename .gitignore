@@ -1,0 +1,7 @@
+.*
+*~
+*.pyc
+TAGS
+build/
+log.txt
+perf.data

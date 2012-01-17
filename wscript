@@ -1,0 +1,105 @@
+#! /usr/bin/evn python
+# encoding: utf-8
+
+import sys
+import Options, UnitTest
+from TaskGen import feature, after
+import Task, Utils
+
+srcdir = '.'
+blddir = 'build'
+
+def set_options(opt):
+    opt.tool_options('compiler_cxx')
+
+    opt.add_option('--debug', help='Build debug variant',
+                   action='store_true', dest="build_debug", default=True
+                  )
+
+    opt.add_option('--release', help='Build release variant',
+                  action='store_false', dest="build_debug"
+                 )
+
+def configure(conf):
+    conf.check_tool('compiler_cxx')
+
+    #
+    # Configure platform
+    #
+    if sys.platform.startswith('linux'):
+        conf.env.CXXDEFINES = ['LINUX']
+    elif sys.platform.startswith('darwin'):
+        conf.env.CXXDEFINES = ['MAC_OS']
+
+    #
+    # Configure libraries
+    #
+    conf.env.LIB_PTHREAD = [ 'pthread' ]
+    conf.env.LIB_PROFILE = [ 'profiler' ]
+    conf.env.LIB_RT = ['rt']
+    conf.env.LIB_TCMALLOC = [ 'tcmalloc' ]
+
+    #
+    # Configure a debug environment
+    #
+    env = conf.env.copy()
+    env.set_variant('debug')
+    conf.set_env_name('debug', env)
+    conf.setenv('debug')
+    conf.env.CXXFLAGS = ['-g', '-Wall', '--pedantic',
+                         '-fno-omit-frame-pointer']
+    #conf.env.LINKFLAGS = ['-export-dynamic']
+
+    #
+    # Configure a release environment
+    #
+    env = conf.env.copy()
+    env.set_variant('release')
+    conf.set_env_name('release', env)
+    conf.setenv('release')
+    conf.env.CXXFLAGS = ['-O3', '-g', '-Wall', '--pedantic',
+                         '-fno-omit-frame-pointer']
+
+def build(bld):
+    #****************************************
+    # libs
+    #
+
+    # header only libs; just documenting
+    # lock.hpp
+
+    bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ log_message.cpp
+                                   log_writer.cpp
+                               """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      target = 'logging',
+                      name = 'logging'
+                    )
+
+
+    #****************************************
+    # tests / benchmarks
+    #
+
+
+    # empty, for now
+
+    #****************************************
+    # Binaries
+    #
+
+
+    # empty, for now
+
+    #
+    # Build debug variant, if --debug was set
+    #
+    if Options.options.build_debug:
+        clone_to = 'debug'
+    else:
+        clone_to = 'release'
+    for obj in [] + bld.all_task_gen:
+        obj.clone(clone_to)
+        obj.posted = True # dont build in default environment
