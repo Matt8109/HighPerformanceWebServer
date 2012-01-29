@@ -28,9 +28,9 @@ public:
   void clear();
 
 private:
-  //
-  // ADD PRIVATE STATE HERE
-  //
+  int* bufferData; //actually holds the buffer information
+  int readLoc; //the read and write locations in the buffer
+  int writeLoc;
 
   // Non-copyable, non-assignable.
   CircularBuffer(CircularBuffer&);
