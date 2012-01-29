@@ -24,7 +24,7 @@ TEST(OverFlow, WriteOverOnFull) { //expect that previous buffer items will be ov
   b.write(2);
   b.write(3);
 
-  EXPECT_EQ(2, b.read());
+  EXPECT_EQ(3, b.read());
 }
 
 TEST(Complete, MaintainPosition) { //check the buffer is maintaining
