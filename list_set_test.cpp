@@ -7,8 +7,8 @@ namespace {
 
 using base::ListBasedSet;
 
-void *insertion_function(void* temp);
-void *deletion_function(void* temp);
+void* insertion_function(void* temp);
+void* deletion_function(void* temp);
 
 struct Params {
   bool isEven;
@@ -150,7 +150,7 @@ TEST(ThreadSafety, Complex)
 void *insertion_function(void* temp) {
   Params* params = (Params*) temp;
 
-  int i = !!params->isEven;
+  int i = params->isEven ? 0 : 1;
 
   for (; i<100; i+=2) 
     params->set->insert(i);
