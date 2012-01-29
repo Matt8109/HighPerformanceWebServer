@@ -8,7 +8,7 @@ namespace base {
 CircularBuffer::CircularBuffer(int slots) {
   int bufferSize = slots < 0 ? slots : DEFAULT_SIZE;
 
-  bufferData = (int*) calloc(bufferSize, sizeof(int));
+  bufferData = new int[bufferSize];
 
 }
 
