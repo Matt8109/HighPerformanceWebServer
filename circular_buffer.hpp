@@ -28,13 +28,17 @@ public:
   void clear();
 
 private:
-  int* bufferData; //actually holds the buffer information
-  int readLoc; //the read and write locations in the buffer
-  int writeLoc;
+  int* buffer_data; // Actually holds the buffer information
+  int read_loc; // The read and write locations in the buffer
+  int write_loc;
+  int count; // Number of slots that are filled
+  int buffer_size;
 
   // Non-copyable, non-assignable.
   CircularBuffer(CircularBuffer&);
   CircularBuffer& operator=(const CircularBuffer&);
+  
+  void Init(int slots); // Resets internal structure
 };
 
 } // namespace base
