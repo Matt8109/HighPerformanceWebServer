@@ -2,10 +2,12 @@
 #define MCP_LIST_SET_HEADER
 
 #include "lock.hpp"
+#include "limits.h"
 
 namespace base {
 
 using base::Mutex;
+
 
 // This is a list-based set.
 //
@@ -42,9 +44,12 @@ public:
   bool checkIntegrity() const;
 
 private:
-  //
-  // ADD PRIVATE STATE HERE
-  //
+  struct ListElement {
+    int value;
+    ListElement* next;
+  };
+
+  ListElement* head;
 
   // Non-copyable, non-assignable.
   ListBasedSet(ListBasedSet&);
