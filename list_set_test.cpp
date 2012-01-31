@@ -28,7 +28,7 @@ TEST(Simple, Clear) {
 
   s.clear();
 
-  EXPECT_TRUE(s.remove(5));
+  EXPECT_FALSE(s.remove(5));
   EXPECT_TRUE(s.checkIntegrity());
 }
 
@@ -41,7 +41,7 @@ TEST(Simple, Lookup) {
 
   EXPECT_TRUE(s.lookup(4));
   EXPECT_TRUE(s.lookup(5));
-  EXPECT_FALSE(s.lookup(5));
+  EXPECT_FALSE(s.lookup(6));
   EXPECT_TRUE(s.checkIntegrity());
 }
 
