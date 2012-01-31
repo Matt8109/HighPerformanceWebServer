@@ -50,6 +50,7 @@ private:
   };
 
   ListElement* head;
+  Mutex* sync_root;  // For locking and unlocking the
 
   // Non-copyable, non-assignable.
   ListBasedSet(ListBasedSet&);
