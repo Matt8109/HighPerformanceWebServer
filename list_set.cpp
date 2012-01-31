@@ -34,9 +34,15 @@ bool ListBasedSet::insert(int value) {
     if (current_element->value < value && !current_element->next) {
        current_element->next = new ListElement();
        current_element->next->value = value;
+       
+       break;
     } else if (current_element->value == value) {
        inserted = false; // The element already exists
-    } else { // Only situation left, inserting between values
+      
+       break;
+    } else if (current_element->value <= value 
+                 && current_element->next->value >= value) { 
+       // Inserting between values
        ListElement* temp_element = new ListElement();
        temp_element->value = value;
        temp_element->next = current_element->next;
@@ -44,7 +50,11 @@ bool ListBasedSet::insert(int value) {
        current_element->next = temp_element;
       
        inserted = false;
+       
+       break;
     }
+
+    current_element = current_element->next;
   }
   
   sync_root->unlock();
@@ -70,7 +80,11 @@ bool ListBasedSet::remove(int value) {
         parent_element->next = current_element->next;
         delete current_element;
       }
-    } 
+
+      break;
+    }
+    
+    current_element = current_element->next; 
   } 
 
   sync_root->unlock();
@@ -84,12 +98,21 @@ bool ListBasedSet::lookup(int value) const {
   bool found = false;
 
   while (current_element) {
-    if (current_element->value < value)
-      current_element = current_element->next; // Too cold
-    else if (current_element->value == value)
-      found = true; // Just right
-    else
-     found = false; // Too hot
+    if (current_element->value < value) {
+       current_element = current_element->next; // Too cold
+      
+       break;
+    } else if (current_element->value == value) {
+       found = true; // Just right
+
+       break;
+    } else {
+       found = false; // Too hot
+       
+       break;
+    }
+
+    current_element = current_element->next; 
   }
   
   sync_root->unlock(); 
@@ -106,7 +129,7 @@ void ListBasedSet::clear() {
 
    while (current_node) {
     // Store the next node before we delete
-    next_node = head->next;
+    next_node = current_node->next;
     
     delete current_node;
 
