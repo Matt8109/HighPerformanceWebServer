@@ -100,8 +100,6 @@ bool ListBasedSet::lookup(int value) const {
   while (current_element) {
     if (current_element->value < value) {
        current_element = current_element->next; // Too cold
-      
-       break;
     } else if (current_element->value == value) {
        found = true; // Just right
 
@@ -111,8 +109,6 @@ bool ListBasedSet::lookup(int value) const {
        
        break;
     }
-
-    current_element = current_element->next; 
   }
   
   sync_root->unlock(); 
