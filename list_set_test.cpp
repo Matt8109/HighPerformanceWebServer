@@ -139,7 +139,7 @@ TEST(ThreadSafety, Complex)
   s.insert(300);
   s.insert(500);
   
-  EXPECT_TRUE(s.lookup(499));
+  EXPECT_FALSE(s.lookup(499));
   EXPECT_TRUE(s.lookup(300));
   EXPECT_TRUE(s.lookup(500));
   EXPECT_TRUE(s.checkIntegrity());
