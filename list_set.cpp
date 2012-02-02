@@ -5,7 +5,6 @@ namespace base {
 ListBasedSet::ListBasedSet() {
   head = NULL;
   
-  //sync_root = Mutex();
   sync_root.unlock();
 }
 
