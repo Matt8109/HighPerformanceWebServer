@@ -135,6 +135,8 @@ void ListBasedSet::clear() {
 }
 
 bool ListBasedSet::checkIntegrity() const {
+  sync_root.lock();
+
   bool is_ascending = true;
   int last_value = INT_MIN;
   ListElement* current_element = head;
@@ -146,6 +148,8 @@ bool ListBasedSet::checkIntegrity() const {
     last_value = current_element->value;
     current_element = current_element->next; 
   }  
+ 
+  sync_root.unlock();
 
   return is_ascending;
 }
