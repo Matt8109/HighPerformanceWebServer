@@ -37,8 +37,6 @@ private:
   // Non-copyable, non-assignable.
   CircularBuffer(CircularBuffer&);
   CircularBuffer& operator=(const CircularBuffer&);
-  
-  void Init(int slots); // Resets internal structure
 };
 
 } // namespace base

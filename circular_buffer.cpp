@@ -3,12 +3,14 @@
 
 #define DEFAULT_SIZE 10
 
-namespace base {
+namespace base { 
 
-CircularBuffer::CircularBuffer(int slots) {
-  buffer_size = slots > 0 ? slots : DEFAULT_SIZE;
-  
-  Init(buffer_size);
+CircularBuffer::CircularBuffer(int slots) 
+    : read_loc(0),
+      write_loc(0),
+      count(0),
+      buffer_size(slots > 0 ? slots : DEFAULT_SIZE) {
+  buffer_data = new int[buffer_size - 1];
 }
 
 CircularBuffer::~CircularBuffer() {
@@ -42,15 +44,10 @@ int CircularBuffer::read() {
 
 void CircularBuffer::clear() {
   delete[] buffer_data;
-  
-  Init(buffer_size);
-}
 
-void CircularBuffer::Init(int slots) {
-  read_loc = 0;
   write_loc = 0;
+  read_loc = 0;
   count = 0;
-  buffer_data = new int[slots - 1];
 }
 
 }  // namespace base
