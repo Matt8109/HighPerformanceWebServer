@@ -81,6 +81,21 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ child_process.cpp
+                                   thread.cpp
+                                   thread_pool_fast.cpp
+                                   thread_pool_normal.cpp
+                                   thread_registry.cpp
+                                   signal_handler.cpp
+                               """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      uselib_local = 'logging',
+                      target = 'concurrency',
+                      name = 'concurrency'
+                    )
+
+    bld.new_task_gen( features = 'cxx cstaticlib',
                       source = """ circular_buffer.cpp
                                    list_set.cpp
                                """,
@@ -97,13 +112,29 @@ def build(bld):
     #
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'callback_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'callback_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'callback_benchmark.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'callback_benchmark'
+                      )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'circular_buffer_test.cpp',
                       includes = '.. .',
                       uselib = '',
                       uselib_local = 'base',
                       target = 'circular_buffer_test',
                       unit_test = 1
-
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
@@ -122,7 +153,6 @@ def build(bld):
                       uselib_local = 'base',
                       target = 'list_set_test',
                       unit_test = 1
-
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
@@ -134,6 +164,40 @@ def build(bld):
                       unit_test = 1
                     )
 
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'signal_handler_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'signal_handler_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'thread_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'thread_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'thread_pool_benchmark.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'thread_pool_benchmark',
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'thread_pool_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'thread_pool_test',
+                      unit_test = 1
+                    )
 
     #****************************************
     # Binaries
