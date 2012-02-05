@@ -2,10 +2,8 @@
 
 namespace base {
 
-ListBasedSet::ListBasedSet() {
-  head = NULL;
-  
-  sync_root.unlock();
+ListBasedSet::ListBasedSet()
+    : head(NULL) {
 }
 
 ListBasedSet::~ListBasedSet() {
