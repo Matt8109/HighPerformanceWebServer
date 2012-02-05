@@ -27,7 +27,7 @@ TEST(OverFlow, WriteOverOnFull) { //expect that previous buffer items will be ov
   EXPECT_EQ(3, b.read());
 }
 
-TEST(Complete, MaintainPosition) { //check the buffer is maintaining
+TEST(Fill, MaintainPosition) { //check the buffer is maintaining
   CircularBuffer b(2);		   //the correct pointer position
   
   b.write(4);
@@ -37,7 +37,7 @@ TEST(Complete, MaintainPosition) { //check the buffer is maintaining
   EXPECT_EQ(9, b.read());
 }
 
-TEST(Complete, FullWriteRead) {   //test filling up the buffer 
+TEST(Fill, FullWriteRead) {   //test filling up the buffer 
   CircularBuffer b(3);		  //and completely clearing it
 
   b.write(1);

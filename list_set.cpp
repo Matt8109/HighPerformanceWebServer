@@ -5,17 +5,15 @@ namespace base {
 ListBasedSet::ListBasedSet() {
   head = NULL;
   
-  sync_root = new Mutex();
-  sync_root->unlock();
+  sync_root.unlock();
 }
 
 ListBasedSet::~ListBasedSet() {
   clear();
-  delete sync_root;
 }
 
 bool ListBasedSet::insert(int value) {
-  sync_root->lock();
+  sync_root.lock();
 
   bool inserted = false;
   ListElement* current_element = head;
@@ -57,13 +55,13 @@ bool ListBasedSet::insert(int value) {
     current_element = current_element->next;
   }
   
-  sync_root->unlock();
+  sync_root.unlock();
   
   return inserted;
 }
 
 bool ListBasedSet::remove(int value) {
-  sync_root->lock();
+  sync_root.lock();
   
   bool deleted = false;
   ListElement* current_element = head;
@@ -87,12 +85,12 @@ bool ListBasedSet::remove(int value) {
     current_element = current_element->next; 
   } 
 
-  sync_root->unlock();
+  sync_root.unlock();
   return deleted;
 }
 
 bool ListBasedSet::lookup(int value) const {
-  sync_root->lock();
+  sync_root.lock();
 
   ListElement* current_element = head;
   bool found = false;
@@ -111,7 +109,7 @@ bool ListBasedSet::lookup(int value) const {
     }
   }
   
-  sync_root->unlock(); 
+  sync_root.unlock(); 
 
   return found;
 }
@@ -136,6 +134,8 @@ void ListBasedSet::clear() {
 }
 
 bool ListBasedSet::checkIntegrity() const {
+  sync_root.lock();
+
   bool is_ascending = true;
   int last_value = INT_MIN;
   ListElement* current_element = head;
@@ -147,6 +147,8 @@ bool ListBasedSet::checkIntegrity() const {
     last_value = current_element->value;
     current_element = current_element->next; 
   }  
+ 
+  sync_root.unlock();
 
   return is_ascending;
 }
