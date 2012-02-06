@@ -1,39 +1,28 @@
 #include <pthread.h>
 
 #include "test_unit.hpp"
+#include "test_util.hpp"
+#include "callback.hpp"
 #include "thread.hpp"
-#include "lock.hpp"
 
 namespace {
-using base::Mutex;
+
+using base::Callback;
+using test::TestThread;
+using base::makeCallableOnce;
+using base::makeCallableMany;
 
 TEST(Single, BitFlip) {
   TestThread test;
 
+  Callback<void>* thread_method = makeCallableOnce(&TestThread::hit, &test);
+ 
+  pthread_t my_thread = makeThread(thread_method);
+
+  pthread_join(my_thread, NULL);
   
-  EXPECT_TRUE(true);
+  EXPECT_TRUE(test.is_hit);
 }
-
-struct TestThread {
-  int count;
-  bool hit;
-  Mutex sync_root;
-
-  TestThread() {
-    count = 0;
-    hit = false;
-  }
-
-  void Hit() {
-    hit = true;
-  }
-
-  void Increase() {
-    sync_root.lock();
-    count++;
-    sync_root.unlock();
-  }
-};
 
 } // unnammed namespace
 
