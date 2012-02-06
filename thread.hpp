@@ -28,7 +28,7 @@ using base::Callback;
 //   // Let's run my_server.doTask() on a separate thread, go do something else,
 //   // and then wait for that thread to finish.
 //   Callback<void>* threadBody = makeCallableOnce(&Server::doTask, &my_server);
-//   pthread_t tid = makeThread(threadBody);
+//   pthread_t my_thread = makeThread(threadBody);
 //   ... go do something else ...
 //   pthread_join(my_thread, NULL);
 //
