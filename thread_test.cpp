@@ -25,6 +25,19 @@ TEST(Single, BitFlip) {
   EXPECT_EQ(test.count, 0);
 }
 
+TEST(Single, Count) {
+  TestThread test;
+
+  Callback<void>* thread_method = makeCallableOnce(&TestThread::increase, &test);
+ 
+  pthread_t my_thread = makeThread(thread_method);
+
+  pthread_join(my_thread, NULL);
+
+  EXPECT_EQ(test.count, 1);
+  EXPECT_FALSE(test.is_hit);
+}
+
 TEST(Multiple, Count) {
   const int count = 8; // The number of threads to run
   TestThread test;
