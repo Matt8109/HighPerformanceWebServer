@@ -26,7 +26,7 @@ TEST(Single, BitFlip) {
 }
 
 TEST(Multiple, Count) {
-  const int count = 1; // The number of threads to run
+  const int count = 8; // The number of threads to run
   TestThread test;
   pthread_t threads[count];
 
@@ -39,13 +39,11 @@ TEST(Multiple, Count) {
   for (int i = 0; i < count; i++)
     pthread_join(threads[count], NULL);
 
-  delete thread_method_one; // Delete callback after all threads finish
-
   EXPECT_EQ(test.count, count);  
+
+  delete thread_method_one;
 }
     
-
-
 } // unnammed namespace
 
 int main(int argc, char* argv[]) {
