@@ -2,10 +2,12 @@
 #define MCP_BASE_TEST_UTIL_HEADER
 
 #include "lock.hpp"
+#include "thread_pool.hpp"
 
 namespace test {
 
 using base::Mutex;
+using base::ThreadPool;
 
 // A simple counter class used often in unit test (and not supposed to
 // be used outside *_test.cpp files.
@@ -36,11 +38,16 @@ class TestThread {
 public:
     int count;
     bool is_hit;
-    Mutex sync_root;
     
     TestThread()  
         : count(0),
           is_hit(false) {
+    }
+
+    TestThread(ThreadPool* thread_pool)
+        : count(0),
+          is_hit(false),
+          thread_pool_(thread_pool) {
     }
     
     void hit() {
@@ -52,6 +59,10 @@ public:
         count++;
         sync_root.unlock();
     }
+
+private:
+ ThreadPool* thread_pool_;
+ Mutex sync_root;
 };
 
 }  // namespace base
