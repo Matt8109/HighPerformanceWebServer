@@ -30,7 +30,7 @@ using base::Callback;
 //   Callback<void>* threadBody = makeCallableOnce(&Server::doTask, &my_server);
 //   pthread_t tid = makeThread(threadBody);
 //   ... go do something else ...
-//   pthread_join(my_thread, NULL);
+//   pthread_join(tid, NULL);
 //
 
 // Returns the thread id of the thread create to run 'body'. The
