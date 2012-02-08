@@ -29,6 +29,8 @@ TEST(Single, Count) {
   TestThread test;
 
   Callback<void>* thread_method = makeCallableOnce(&TestThread::increase, &test);
+
+	EXPECT_TRUE(thread_method->once());
  
   pthread_t my_thread = makeThread(thread_method);
 
@@ -45,6 +47,8 @@ TEST(Multiple, Count) {
 
   Callback<void>* thread_method_one = 
       makeCallableMany(&TestThread::increase, &test);
+
+	EXPECT_FALSE(thread_method_one->once());
 
   for (int i = 0; i < count; i++)
     threads[count] = makeThread(thread_method_one);
