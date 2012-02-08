@@ -12,7 +12,6 @@ using base::Callback;
 // thread will run 'body', which can be any function or object method
 // with no arguments and no return.
 //
-//
 // Usage:
 //   #include "callback.hpp"
 //
@@ -36,6 +35,8 @@ using base::Callback;
 // Returns the thread id of the thread create to run 'body'. The
 // latter onwership is determined by whether the callback is call-once
 // or not. Internally, 'body' is only invoked once.
+//
+// If a thread cannot be created, this call will exit()
 pthread_t makeThread(Callback<void>* body);
 
 }  // namespace base
