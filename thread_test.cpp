@@ -28,7 +28,7 @@ TEST(Single, BitFlip) {
 TEST(Single, Count) {
   TestThread test;
 
-  Callback<void>* thread_method = makeCallableOnce(&TestThread::increase, &test);
+  Callback<int>* thread_method = makeCallableOnce(&TestThread::increase, &test);
 
 	EXPECT_TRUE(thread_method->once());
  
@@ -45,7 +45,7 @@ TEST(Multiple, Count) {
   TestThread test;
   pthread_t threads[count];
 
-  Callback<void>* thread_method_one = 
+  Callback<int>* thread_method_one = 
       makeCallableMany(&TestThread::increase, &test);
 
 	EXPECT_FALSE(thread_method_one->once());
