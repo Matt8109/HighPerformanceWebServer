@@ -54,11 +54,21 @@ public:
         is_hit = true;
     }
     
-    void increase() {
-        sync_root.lock();
+    int increase() {
+        int value;
+
+				sync_root.lock();
         count++;
+				value = count;
         sync_root.unlock();
+
+				return value;
     }
+
+		void stop() {
+			if (!thread_pool_)
+				thread_pool_->stop();
+		}
 
 private:
  ThreadPool* thread_pool_;

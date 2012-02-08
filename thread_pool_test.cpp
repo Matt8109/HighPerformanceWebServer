@@ -29,7 +29,8 @@ TEST(SingleTask, HitAndStop) {
 
 	TestThread test_thread(thread_pool);
 
-	Callback<void>* thread_method = makeCallableOnce(&TestThread::hit, &test_thread);
+	Callback<void>* thread_method = 
+	    makeCallableOnce(&TestThread::hit, &test_thread);
 
 	thread_pool->addTask(thread_method);
 
@@ -48,7 +49,8 @@ TEST(SingleTaskMultipleExecutions, Count) {
 
   EXPECT_EQ(test_thread.count, 0);
 
-	Callback<void>* thread_method = makeCallableMany(&TestThread::increase, &test_thread);
+	Callback<int>* thread_method = 
+      	    makeCallableMany(&TestThread::increase, &test_thread);
 
 	thread_pool->addTask(thread_method); // Kick off the tasks
 	thread_pool->addTask(thread_method);
@@ -56,14 +58,64 @@ TEST(SingleTaskMultipleExecutions, Count) {
 	thread_pool->stop();
 
 	EXPECT_EQ(thread_pool->count(), 0);
+	EXPECt_EQ(thread_method, 2);
 	EXPECT_EQ(test_thread.count, 2);
+	
+	delete thread_pool;
+	delete thread_method;
 }
 
 // Create and run a task, stop the the pool, schedule another
 // task and make sure it doesnt execute
-TEST(SingleTaskSingleExecution, TaskStopTask) {
+TEST(SingleTaskSingleExecution, ExternalTaskStop) {
+	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
+	ThreadTest test_thread(thread_pool);
+
+	Callback<int>* thread_method_one =
+		makeCallableOnce(&TestThread::increase, &test_thread);
+
+	Callback<int>* thread_method_two =
+		makeCallableOnce(&TestThread::increase, &test_thread);
+
+	thread_pool->addTask(thread_method_one);
+	
+	thread_pool->stop();
+
+	thread_pool->addTask(thread_method_two);
+
+	// Assuming no threads are considered to be 'waiting' if the pool is stopped
+	EXPECT_EQ(thread_pool->count(), 0);
+	EXPECT_EQ(thread_method_one, 1)
+	EXPECT_EQ(test_thread.count, 1);
+
+	delete thread_pool;
 }
+
+TEST(SingleTaskMultipleExecution, InternalTaskStop) {
+	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
+
+	ThreadTest test_thread(thread_pool);
+
+	Callback<void>* thread_method_one =
+		makeCallableOnce(&TestThread::increase, &test_thread);
+
+  Callback<void>* thread_method_two =
+		makeCallableOnce(&TestThread::hit, &test_thread);
+
+	Callback<void>* stop_method =
+		makeCallableOnce(&TestThread::stop, &test_thread);
+
+	thread_pool->addTask(thread_method_one);
+	thread_pool->addTask(stop_method);
+	thread_pool->addTask(thread_method_two);
+
+	EXPECT_EQ(thread_method_one, 1);
+	EXPECT_EQ(thread_pool->count, 0);
+
+	delete thread_pool;
+}
+	
 
 } // unnammed namespace
 
