@@ -53,16 +53,15 @@ public:
     void hit() {
         is_hit = true;
     }
-    
-    int increase() {
-        int value;
 
+		void flip() {
+			is_hit = !is_hit;
+		}
+    
+    void increase() {
 				sync_root.lock();
         count++;
-				value = count;
         sync_root.unlock();
-
-				return value;
     }
 
 		void stop() {
