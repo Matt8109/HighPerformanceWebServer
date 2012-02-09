@@ -53,17 +53,26 @@ public:
     void hit() {
         is_hit = true;
     }
-    
-    int increase() {
-        int value;
 
+		void flip() {
+			is_hit = !is_hit;
+		}
+    
+    void increase() {
 				sync_root.lock();
         count++;
-				value = count;
         sync_root.unlock();
-
-				return value;
     }
+
+		// Slow the counter down, for the benchmark test
+		void slowIncrease(int loopCount) {
+			for (int i=0; i<loopCount; i++) 
+				is_hit = !is_hit; // hopefully something the compiler wont optimize out
+
+			sync_root.lock();
+			count++;
+			sync_root.unlock();
+		}
 
 		void stop() {
 			if (!thread_pool_)

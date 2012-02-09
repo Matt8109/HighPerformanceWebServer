@@ -49,7 +49,7 @@ TEST(SingleTaskMultipleExecutions, Count) {
 
   EXPECT_EQ(test_thread.count, 0);
 
-	Callback<int>* thread_method = 
+	Callback<void>* thread_method = 
       	    makeCallableMany(&TestThread::increase, &test_thread);
 
 	thread_pool->addTask(thread_method); // Kick off the tasks
@@ -58,7 +58,6 @@ TEST(SingleTaskMultipleExecutions, Count) {
 	thread_pool->stop();
 
 	EXPECT_EQ(thread_pool->count(), 0);
-	EXPECt_EQ(thread_method, 2);
 	EXPECT_EQ(test_thread.count, 2);
 	
 	delete thread_pool;
@@ -70,52 +69,109 @@ TEST(SingleTaskMultipleExecutions, Count) {
 TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	ThreadTest test_thread(thread_pool);
+	TestThread test_thread(thread_pool);
 
-	Callback<int>* thread_method_one =
-		makeCallableOnce(&TestThread::increase, &test_thread);
+	Callback<void>* thread_method =
+		makeCallableMany(&TestThread::increase, &test_thread);
 
-	Callback<int>* thread_method_two =
-		makeCallableOnce(&TestThread::increase, &test_thread);
-
-	thread_pool->addTask(thread_method_one);
+	thread_pool->addTask(thread_method);
 	
 	thread_pool->stop();
 
-	thread_pool->addTask(thread_method_two);
+	thread_pool->addTask(thread_method);
 
 	// Assuming no threads are considered to be 'waiting' if the pool is stopped
 	EXPECT_EQ(thread_pool->count(), 0);
-	EXPECT_EQ(thread_method_one, 1)
 	EXPECT_EQ(test_thread.count, 1);
 
 	delete thread_pool;
+	delete thread_method;
 }
 
 TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	ThreadTest test_thread(thread_pool);
+	TestThread test_thread(thread_pool);
 
-	Callback<void>* thread_method_one =
-		makeCallableOnce(&TestThread::increase, &test_thread);
-
-  Callback<void>* thread_method_two =
-		makeCallableOnce(&TestThread::hit, &test_thread);
+	Callback<void>* main_method =
+		makeCallableMany(&TestThread::increase, &test_thread);
 
 	Callback<void>* stop_method =
 		makeCallableOnce(&TestThread::stop, &test_thread);
 
-	thread_pool->addTask(thread_method_one);
+	for (int i=0; i<10; i++)
+		thread_pool->addTask(main_method);
+	
 	thread_pool->addTask(stop_method);
-	thread_pool->addTask(thread_method_two);
+	
+	for (int i=0; i<1000; i++)
+		thread_pool->addTask(main_method);
 
-	EXPECT_EQ(thread_method_one, 1);
-	EXPECT_EQ(thread_pool->count, 0);
+	// This probably isn't the best way to test, but essentially
+	// we want to make sure that the thread pool is being stopped
+	// before we reach the max possible count if all the tasks
+	// had been run.
+	bool less_than_max = (test_thread.count<1009) ? true : false;
+
+	EXPECT_TRUE(less_than_max);
+	EXPECT_EQ(thread_pool->count(), 0);
 
 	delete thread_pool;
+	delete main_method;
 }
+
+TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
+	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
+
+	TestThread test_thread(thread_pool);
+
+	Callback<void>* count_method = 
+		makeCallableMany(&TestThread::increase, &test_thread);
+
+	Callback<void>* hit_method =
+		makeCallableMany(&TestThread::flip, &test_thread);
+
+	for (int i=0; i<99; i++)
+	{
+		thread_pool->addTask(count_method);
+		thread_pool->addTask(hit_method);
+	}
+
+	thread_pool->stop();
+
+	EXPECT_EQ(test_thread.count, 99);
+	EXPECT_EQ(test_thread.is_hit, true);
+
+	delete thread_pool;
+	delete count_method;
+	delete hit_method;
+}
+
+TEST(MultipleTasksMultipleExecutions, MultipleStops) {
+	// on a personal note I dont really want to have to write the code
+	// that will make this pass :)
+	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
+
+	TestThread test_thread(thread_pool);
+
+	Callback<void>* count_method =
+		makeCallableMany(&TestThread::increase, &test_thread);
+
+	Callback<void>* stop_method =
+		makeCallableOnce(&TestThread::stop, &test_thread);
+
+	for (int i=0; i<100; i++) 
+		thread_pool->addTask(count_method);
 	
+	// this shouldnt deadlock
+	thread_pool->addTask(stop_method);
+	thread_pool->stop();
+
+	EXPECT_EQ(test_thread.count, 100);
+
+	delete thread_pool;
+	delete count_method;
+}
 
 } // unnammed namespace
 
