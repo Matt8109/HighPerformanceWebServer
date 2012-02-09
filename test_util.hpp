@@ -64,6 +64,16 @@ public:
         sync_root.unlock();
     }
 
+		// Slow the counter down, for the benchmark test
+		void slowIncrease(int loopCount) {
+			for (int i=0; i<loopCount; i++) 
+				is_hit = !is_hit; // hopefully something the compiler wont optimize out
+
+			sync_root.lock();
+			count++;
+			sync_root.unlock();
+		}
+
 		void stop() {
 			if (!thread_pool_)
 				thread_pool_->stop();
