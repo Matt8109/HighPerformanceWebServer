@@ -105,13 +105,13 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	thread_pool->addTask(stop_method);
 	
 	for (int i=0; i<1000; i++)
-	thread_pool->addTask(thread_method_two);
+		thread_pool->addTask(main_method);
 
 	// This probably isn't the best way to test, but essentially
 	// we want to make sure that the thread pool is being stopped
 	// before we reach the max possible count if all the tasks
 	// had been run.
-	bool less_than_max = test_thread.count()<1009;
+	bool less_than_max = (test_thread.count<1009) ? true : false;
 
 	EXPECT_TRUE(less_than_max);
 	EXPECT_EQ(thread_pool->count(), 0);
@@ -126,10 +126,10 @@ TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 	TestThread test_thread(thread_pool);
 
 	Callback<void>* count_method = 
-		makeCallableMany(&ThreadTest::increase, &test_thread);
+		makeCallableMany(&TestThread::increase, &test_thread);
 
 	Callback<void>* hit_method =
-		makeCallbackMany(&ThreadTest::flip, &test_thread);
+		makeCallableMany(&TestThread::flip, &test_thread);
 
 	for (int i=0; i<99; i++)
 	{
@@ -139,13 +139,40 @@ TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 
 	thread_pool->stop();
 
-	EXPECT_EQ(test_thread.count(), 99);
-	EXPECT_EQ(test_thread.is_hit(), true);
+	EXPECT_EQ(test_thread.count, 99);
+	EXPECT_EQ(test_thread.is_hit, true);
 
 	delete thread_pool;
 	delete count_method;
 	delete hit_method;
-	}
+}
+
+TEST(MultipleTasksMultipleExecutions, MultipleStops) {
+	// on a personal note I dont really want to have to write the code
+	// that will make this pass :)
+	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
+
+	TestThread test_thread(thread_pool);
+
+	Callback<void>* count_method =
+		makeCallableMany(&TestThread::increase, &test_thread);
+
+	Callback<void>* stop_method =
+		makeCallableOnce(&TestThread::stop, &test_thread);
+
+	for (int i=0; i<100; i++) 
+		thread_pool->addTask(count_method);
+	
+	// this shouldnt deadlock
+	thread_pool->addTask(stop_method);
+	thread_pool->stop();
+
+	EXPECT_EQ(test_thread.count, 100);
+
+	delete thread_pool;
+	delete count_method;
+}
+
 } // unnammed namespace
 
 int main(int argc, char* argv[]) {
