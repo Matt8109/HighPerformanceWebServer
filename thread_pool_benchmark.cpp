@@ -1,6 +1,9 @@
-#define CORE_COUNT 8 //the number of cores you have/threads to create
+#define THREAD_COUNT_SM 2 //small test size
+#define THREAD_COUNT_MD 8 // medium test size
+#define THREAD_COUNT_LG 20 // large test size
 #define LOOP_COUNT 5000 // the number of tasks for each thread_pool
-#define SLOW_LOOP_COUNT 500 // time to waste in the slow consumer per action
+#define TASK_SLOW_COUNT 500 // time to waste in the slow consumer per action
+#define TASK_ADD_SLOW_COUNT 50 // time to waste before queuing new tasks
 
 #include <iostream>
 #include <sstream>
@@ -20,50 +23,94 @@ using base::ThreadPoolFast;
 using base::Timer;
 using test::TestThread;
 
+// Seem to be needed to be called from within the namespace
+template<typename PoolType>
+void FastTestLogic(int pool_size);
+
+template<typename PoolType>
+void SlowTestLogic(int pool_size); 
+
 template<typename PoolType>
 void FastConsumer() {
-  bool flip = false;
+	// Essentially this method will add a bunch of fast tasks to the
+	// thread pool, and will do busywork every so often based on the 
+	// number of threads in the pool to try to keep worker threads available
+	std::cout << "\nFast Consumer:\t";
+  std::cout << std::endl << "\t";
+
+	FastTestLogic<PoolType>(THREAD_COUNT_SM);
+	std::cout << " | ";
+	
+	FastTestLogic<PoolType>(THREAD_COUNT_MD);
+	std::cout << " | ";
+
+	FastTestLogic<PoolType>(THREAD_COUNT_LG);
+
+}
+
+template<typename PoolType>
+void FastTestLogic(int pool_size) {
+	bool flip = false;
 	Timer timer;
 
-	std::cout << "Fast Consumer:\t";
-  std::cout << std::endl;
-
-	PoolType* thread_pool = new PoolType(CORE_COUNT);
+	PoolType* thread_pool = new PoolType(pool_size);
 
 	TestThread thread_test(thread_pool);
 
-	Callback<void>* callback = 
+	Callback<void>* increase_task = 
 		makeCallableMany(&TestThread::increase, &thread_test);
+
+	Callback<void>* hit_task =
+		makeCallableMany(&TestThread::hit, &thread_test);
 
 	timer.start();
 
-	for (int i = 0; i<LOOP_COUNT; i++) {
-		if (i % (CORE_COUNT+2) == 0) { 
+	for (int i = 0; i < LOOP_COUNT; i++) {
+		if (i % (pool_size + 2) == 0) { 
 			// slow down adding tasks every so often, keep pool "mostly" non full
-			flip=!flip;
+			
+			for (int i = 0; i < TASK_ADD_SLOW_COUNT; i++)
+				flip=!flip;
 		}
 
-		thread_pool->addTask(callback);
+		thread_pool->addTask(increase_task);
+
+		if (i % 10 == 0) // Every so often throw in a different task
+			thread_pool->addTask(hit_task);
 	}
 
 	thread_pool->stop();
 
 	timer.end();
 
-	std::cout << "\t" << timer.elapsed() << std::endl;
+	std::cout << timer.elapsed() << " with " << pool_size << " threads";
 
 	delete thread_pool;
-	delete callback;
+	delete increase_task;
+	delete hit_task;
 }
 
 template<typename PoolType>
 void SlowConsumer() {
+	// A slower benchmark test. The test driver never pauses while adding threads
+	// and the threads methods themselves have a built in slowdown that will cause
+	// a backlog of tasks to form in the thread pool.
+  std::cout << "\nSlow Consumer:\t";
+  std::cout << std::endl << "\t";
+
+	SlowTestLogic<PoolType>(THREAD_COUNT_SM);
+	std::cout << " | ";
+
+	SlowTestLogic<PoolType>(THREAD_COUNT_MD);
+	std::cout << " | ";
+
+	SlowTestLogic<PoolType>(THREAD_COUNT_LG);
+}
+
+template<typename PoolType>
+void SlowTestLogic(int pool_size) {
 	Timer timer;
-
-  std::cout << "Slow Consumer:\t";
-  std::cout << std::endl;
-
-	PoolType* thread_pool = new PoolType(CORE_COUNT);
+	PoolType* thread_pool = new PoolType(pool_size);
 
 	TestThread thread_test(thread_pool);
 
@@ -72,7 +119,7 @@ void SlowConsumer() {
 
 	Callback<void>* wrapper_cb = 
 		makeCallableMany(
-				&Callback<void, int>::operator(), internal_cb, SLOW_LOOP_COUNT);
+				&Callback<void, int>::operator(), internal_cb, TASK_SLOW_COUNT);
 
 	timer.start();
 
@@ -83,7 +130,7 @@ void SlowConsumer() {
 
 	timer.end();
 
-	std::cout << "\t" << timer.elapsed() << std::endl;
+	std::cout << timer.elapsed() << " with " << pool_size << " threads";
 
 	delete thread_pool;
 	delete wrapper_cb;
@@ -134,6 +181,8 @@ int main(int argc, char* argv[]) {
   if (all || num[1]) {
     SlowConsumer<ThreadPoolFast>();
   }
+
+	std::cout << "\n\n"; // Just to make the return to the cmd line nicer
 
   return 0;
 }
