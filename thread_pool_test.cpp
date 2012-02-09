@@ -12,7 +12,7 @@ using base::ThreadPool;
 using base::ThreadPoolNormal;
 using base::makeCallableOnce;
 using base::makeCallableMany;
-using test::TestThread;
+using test::TestClass;
 
 TEST(NoTask, Stop) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
@@ -27,10 +27,10 @@ TEST(NoTask, Stop) {
 TEST(SingleTask, HitAndStop) {
   ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	TestThread test_thread(thread_pool);
+	TestClass test_thread(thread_pool);
 
 	Callback<void>* thread_method = 
-	    makeCallableOnce(&TestThread::hit, &test_thread);
+	    makeCallableOnce(&TestClass::hit, &test_thread);
 
 	thread_pool->addTask(thread_method);
 
@@ -45,12 +45,12 @@ TEST(SingleTask, HitAndStop) {
 TEST(SingleTaskMultipleExecutions, Count) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	TestThread test_thread(thread_pool);
+	TestClass test_thread(thread_pool);
 
   EXPECT_EQ(test_thread.count, 0);
 
 	Callback<void>* thread_method = 
-      	    makeCallableMany(&TestThread::increase, &test_thread);
+      	    makeCallableMany(&TestClass::increase, &test_thread);
 
 	thread_pool->addTask(thread_method); // Kick off the tasks
 	thread_pool->addTask(thread_method);
@@ -69,10 +69,10 @@ TEST(SingleTaskMultipleExecutions, Count) {
 TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	TestThread test_thread(thread_pool);
+	TestClass test_thread(thread_pool);
 
 	Callback<void>* thread_method =
-		makeCallableMany(&TestThread::increase, &test_thread);
+		makeCallableMany(&TestClass::increase, &test_thread);
 
 	thread_pool->addTask(thread_method);
 	
@@ -91,13 +91,13 @@ TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	TestThread test_thread(thread_pool);
+	TestClass test_thread(thread_pool);
 
 	Callback<void>* main_method =
-		makeCallableMany(&TestThread::increase, &test_thread);
+		makeCallableMany(&TestClass::increase, &test_thread);
 
 	Callback<void>* stop_method =
-		makeCallableOnce(&TestThread::stop, &test_thread);
+		makeCallableOnce(&TestClass::stop, &test_thread);
 
 	for (int i=0; i<10; i++)
 		thread_pool->addTask(main_method);
@@ -123,13 +123,13 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	TestThread test_thread(thread_pool);
+	TestClass test_thread(thread_pool);
 
 	Callback<void>* count_method = 
-		makeCallableMany(&TestThread::increase, &test_thread);
+		makeCallableMany(&TestClass::increase, &test_thread);
 
 	Callback<void>* hit_method =
-		makeCallableMany(&TestThread::flip, &test_thread);
+		makeCallableMany(&TestClass::flip, &test_thread);
 
 	for (int i=0; i<99; i++)
 	{
@@ -152,13 +152,13 @@ TEST(MultipleTasksMultipleExecutions, MultipleStops) {
 	// that will make this pass :)
 	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
-	TestThread test_thread(thread_pool);
+	TestClass test_thread(thread_pool);
 
 	Callback<void>* count_method =
-		makeCallableMany(&TestThread::increase, &test_thread);
+		makeCallableMany(&TestClass::increase, &test_thread);
 
 	Callback<void>* stop_method =
-		makeCallableOnce(&TestThread::stop, &test_thread);
+		makeCallableOnce(&TestClass::stop, &test_thread);
 
 	for (int i=0; i<100; i++) 
 		thread_pool->addTask(count_method);

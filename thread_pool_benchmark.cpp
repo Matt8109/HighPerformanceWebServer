@@ -21,7 +21,7 @@ using base::makeCallableMany;
 using base::ThreadPoolNormal;
 using base::ThreadPoolFast;
 using base::Timer;
-using test::TestThread;
+using test::TestClass;
 
 // Seem to be needed to be called from within the namespace
 template<typename PoolType>
@@ -55,13 +55,13 @@ void FastTestLogic(int pool_size) {
 
 	PoolType* thread_pool = new PoolType(pool_size);
 
-	TestThread thread_test(thread_pool);
+	TestClass thread_test(thread_pool);
 
 	Callback<void>* increase_task = 
-		makeCallableMany(&TestThread::increase, &thread_test);
+		makeCallableMany(&TestClass::increase, &thread_test);
 
 	Callback<void>* hit_task =
-		makeCallableMany(&TestThread::hit, &thread_test);
+		makeCallableMany(&TestClass::hit, &thread_test);
 
 	timer.start();
 
@@ -112,10 +112,10 @@ void SlowTestLogic(int pool_size) {
 	Timer timer;
 	PoolType* thread_pool = new PoolType(pool_size);
 
-	TestThread thread_test(thread_pool);
+	TestClass thread_test(thread_pool);
 
 	Callback<void, int>* internal_cb = 
-		makeCallableMany(&TestThread::slowIncrease, &thread_test);
+		makeCallableMany(&TestClass::slowIncrease, &thread_test);
 
 	Callback<void>* wrapper_cb = 
 		makeCallableMany(

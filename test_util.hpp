@@ -34,17 +34,17 @@ private:
 };
     
 // A simple class for testing threads
-class TestThread {
+class TestClass {
 public:
     int count;
     bool is_hit;
     
-    TestThread()  
+    TestClass()  
         : count(0),
           is_hit(false) {
     }
 
-    TestThread(ThreadPool* thread_pool)
+    TestClass(ThreadPool* thread_pool)
         : count(0),
           is_hit(false),
           thread_pool_(thread_pool) {

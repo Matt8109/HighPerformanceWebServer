@@ -8,14 +8,14 @@
 namespace {
 
 using base::Callback;
-using test::TestThread;
+using test::TestClass;
 using base::makeCallableOnce;
 using base::makeCallableMany;
 
 TEST(Single, BitFlip) {
-  TestThread test;
+  TestClass test;
 
-  Callback<void>* thread_method = makeCallableOnce(&TestThread::hit, &test);
+  Callback<void>* thread_method = makeCallableOnce(&TestClass::hit, &test);
  
   pthread_t my_thread = makeThread(thread_method);
 
@@ -26,10 +26,10 @@ TEST(Single, BitFlip) {
 }
 
 TEST(Single, Count) {
-  TestThread test;
+  TestClass test;
 
   Callback<void>* thread_method = 
-		makeCallableOnce(&TestThread::increase, &test);
+		makeCallableOnce(&TestClass::increase, &test);
 
 	EXPECT_TRUE(thread_method->once());
  
@@ -43,11 +43,11 @@ TEST(Single, Count) {
 
 TEST(Multiple, Count) {
   const int count = 8; // The number of threads to run
-  TestThread test;
+  TestClass test;
   pthread_t threads[count];
 
   Callback<void>* thread_method_one = 
-      makeCallableMany(&TestThread::increase, &test);
+      makeCallableMany(&TestClass::increase, &test);
 
 	EXPECT_FALSE(thread_method_one->once());
 
