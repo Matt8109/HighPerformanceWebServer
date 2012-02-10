@@ -32,9 +32,6 @@ void SlowTestLogic(int pool_size);
 
 template<typename PoolType>
 void FastConsumer() {
-	// Essentially this method will add a bunch of fast tasks to the
-	// thread pool, and will do busywork every so often based on the 
-	// number of threads in the pool to try to keep worker threads available
 	std::cout << "\nFast Consumer:\t";
   std::cout << std::endl << "\t";
 
@@ -50,6 +47,9 @@ void FastConsumer() {
 
 template<typename PoolType>
 void FastTestLogic(int pool_size) {
+	// Essentially this method will add a bunch of fast tasks to the
+	// thread pool, and will do busywork every so often based on the 
+	// number of threads in the pool to try to keep worker threads available
 	bool flip = false;
 	Timer timer;
 
@@ -66,9 +66,8 @@ void FastTestLogic(int pool_size) {
 	timer.start();
 
 	for (int i = 0; i < LOOP_COUNT; i++) {
-		if (i % (pool_size + 2) == 0) { 
+		if (i % pool_size == 0) { 
 			// slow down adding tasks every so often, keep pool "mostly" non full
-			
 			for (int i = 0; i < TASK_ADD_SLOW_COUNT; i++)
 				flip=!flip;
 		}
@@ -92,9 +91,6 @@ void FastTestLogic(int pool_size) {
 
 template<typename PoolType>
 void SlowConsumer() {
-	// A slower benchmark test. The test driver never pauses while adding threads
-	// and the threads methods themselves have a built in slowdown that will cause
-	// a backlog of tasks to form in the thread pool.
   std::cout << "\nSlow Consumer:\t";
   std::cout << std::endl << "\t";
 
@@ -109,6 +105,9 @@ void SlowConsumer() {
 
 template<typename PoolType>
 void SlowTestLogic(int pool_size) {
+	// A slower benchmark test. The test driver never pauses while adding threads
+	// and the threads methods themselves have a built in slowdown that will cause
+	// a backlog of tasks to form in the thread pool.
 	Timer timer;
 	PoolType* thread_pool = new PoolType(pool_size);
 
