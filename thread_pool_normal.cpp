@@ -2,7 +2,7 @@
 
 namespace base {
 
-ThreadPoolNormal::ThreadPoolNormal(int num_workers) {
+ThreadPoolNormal::ThreadPoolNormal(int num_workers) { 
 }
 
 ThreadPoolNormal::~ThreadPoolNormal() {
