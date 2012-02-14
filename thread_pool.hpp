@@ -17,7 +17,7 @@ public:
   // worker issued new addTask()s.
   //
   // REQUIRES: stop() have completed executing.
-  virtual ~ThreadPool() {}
+  virtual ~ThreadPool(); 
 
   // Requests the execution of 'task' on an undetermined worker thread.
   virtual void addTask(Callback<void>* task) = 0;
@@ -32,14 +32,16 @@ public:
   // Returns the current size of the dispatch queue (pending tasks).
   virtual int count() const = 0;
 
-protected:
-	ThreadPool()
-		  : stopping(false) {
-	}
 
-	bool stopping; //if the thread pool is stopped, or processing stop
-	Mutex sync_root; //for general locking
-	SafeQueue<Callback<void>*> pending_tasks;
+protected:
+	// Needed to create the correct number of threads for the pool
+	ThreadPool(int num_workers);
+
+	bool stopping_; //if the thread pool is stopped, or processing stop
+	int thread_count_;
+	Mutex sync_root_; //for general locking
+	pthread_t* thread_list_;
+	SafeQueue<Callback<void>*> pending_tasks_;
 };
 
 } // namespace base

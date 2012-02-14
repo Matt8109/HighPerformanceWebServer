@@ -83,6 +83,7 @@ def build(bld):
     bld.new_task_gen( features = 'cxx cstaticlib',
                       source = """ child_process.cpp
                                    thread.cpp
+                                   thread_pool.cpp
                                    thread_pool_fast.cpp
                                    thread_pool_normal.cpp
                                    thread_registry.cpp

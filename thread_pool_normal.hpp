@@ -25,6 +25,8 @@ private:
   // Non-copyable, non-assignable.
   ThreadPoolNormal(const ThreadPoolNormal&);
   ThreadPoolNormal& operator=(const ThreadPoolNormal&);
+
+	void ThreadTask();
 };
 
 } // namespace base

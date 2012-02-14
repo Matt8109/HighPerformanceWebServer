@@ -9,7 +9,8 @@ using base::makeCallableOnce;
 //  ThreadPoolFast Definitions
 //
 
-ThreadPoolFast::ThreadPoolFast(int num_workers) {
+ThreadPoolFast::ThreadPoolFast(int num_workers) 
+    : ThreadPool(num_workers) {
 }
 
 ThreadPoolFast::~ThreadPoolFast() {

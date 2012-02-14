@@ -2,7 +2,8 @@
 
 namespace base {
 
-ThreadPoolNormal::ThreadPoolNormal(int num_workers) { 
+ThreadPoolNormal::ThreadPoolNormal(int num_workers)
+    : ThreadPool(num_workers) { 
 }
 
 ThreadPoolNormal::~ThreadPoolNormal() {
@@ -16,6 +17,9 @@ void ThreadPoolNormal::addTask(Callback<void>* task) {
 
 int ThreadPoolNormal::count() const {
   return 0;
+}
+
+void ThreadTask() {
 }
 
 } // namespace base
