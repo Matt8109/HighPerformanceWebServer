@@ -34,7 +34,7 @@ int ThreadPoolNormal::count() const {
   return 0;
 }
 
-void ThreadMethod() {
+void ThreadPoolNormal::ThreadMethod() {
 }
 
 } // namespace base
