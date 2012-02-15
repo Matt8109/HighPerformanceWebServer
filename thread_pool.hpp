@@ -1,6 +1,7 @@
 #ifndef MCP_BASE_THREAD_POOL_HEADER
 #define MCP_BASE_THREAD_POOL_HEADER
 
+#include <list>
 #include <pthread.h>
 
 #include "lock.hpp"
@@ -8,6 +9,8 @@
 #include "safe_queue.hpp"
 
 namespace base {
+
+struct ThreadWrapper;
 
 // Abstract base class for experimenting with thread-pool strategies.
 class ThreadPool {
@@ -40,8 +43,21 @@ protected:
 	bool stopping_; //if the thread pool is stopped, or processing stop
 	int thread_count_;
 	Mutex sync_root_; //for general locking
-	pthread_t* thread_list_;
+  std::list<ThreadWrapper> thread_list_;
 	SafeQueue<Callback<void>*> pending_tasks_;
+};
+
+struct ThreadWrapper {
+public:
+	pthread_t thread_;
+	bool is_running_;
+	Callback<void>* current_task_;  
+
+	ThreadWrapper(pthread_t thread) 
+		  : thread_(thread) {
+  }
+
+	~ThreadWrapper() { }
 };
 
 } // namespace base
