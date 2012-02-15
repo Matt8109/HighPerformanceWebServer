@@ -18,7 +18,7 @@ public:
   // Requests the execution of 'task' on an undetermined worker thread.
   virtual void addTask(Callback<void>* task) = 0;
 
-  // Waits for all the workers to finish processing the pending tasks
+  // Waits for all the workers to finish processing the ongoing tasks
   // and stop then stop the pool. This call may be issued from within
   // a worker thread itself.
   virtual void stop() = 0;
