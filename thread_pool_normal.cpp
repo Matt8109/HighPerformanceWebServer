@@ -39,9 +39,9 @@ void ThreadPoolNormal::stop() {
 	}
 
   // ok once we are here, we are done
-  sync_root.lock();
+  sync_root_.lock();
 	status_ = IS_STOPPED;
-	sync_root.unlock();	
+	sync_root_.unlock();	
 }
 
 void ThreadPoolNormal::addTask(Callback<void>* task) {
@@ -50,8 +50,9 @@ void ThreadPoolNormal::addTask(Callback<void>* task) {
 
 		if (!task->once())
 			delete_list_[task] = delete_list_[task]++; // increase our reference count
-		
+	
 		task_queue_.push(task);
+
 		sync_root_.unlock();
 
 		not_empty_.signal(); // alert the threads
@@ -73,7 +74,7 @@ void ThreadPoolNormal::ThreadMethod() {
 	Callback<void>* cb;
   struct timespec timeout;
   timeout.tv_sec = 0;
-	timeout.tv_nsec = 1000;
+	timeout.tv_nsec = 100;
 
 	while (true) {
 		sync_root_.lock();
@@ -86,9 +87,10 @@ void ThreadPoolNormal::ThreadMethod() {
 			return;
 		}
 
-		cb = task_queue_.pop();
+		cb = task_queue_.front();
+		task_queue_.pop();
 
-		sync_root.unlock();
+		sync_root_.unlock();
 	
 		(*cb)(); // execute the task
 

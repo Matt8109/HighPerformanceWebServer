@@ -35,15 +35,6 @@ public:
 
   // Returns the current size of the dispatch queue (pending tasks).
   virtual int count() const = 0;
-
-protected:
-	ThreadPool()
-		  : stopping(false) {
-	}
-
-	bool stopping; //if the thread pool is stopped, or processing stop
-	Mutex sync_root; //for general locking
-	SafeQueue<Callback<void>*> pending_tasks;
 };
 
 } // namespace base

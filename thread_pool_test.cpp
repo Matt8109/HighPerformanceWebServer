@@ -61,7 +61,6 @@ TEST(SingleTaskMultipleExecutions, Count) {
 	EXPECT_EQ(test_thread.count, 2);
 	
 	delete thread_pool;
-	delete thread_method;
 }
 
 // Create and run a task, stop the the pool, schedule another
@@ -85,7 +84,6 @@ TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 	EXPECT_EQ(test_thread.count, 1);
 
 	delete thread_pool;
-	delete thread_method;
 }
 
 TEST(SingleTaskMultipleExecution, InternalTaskStop) {
@@ -117,7 +115,6 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	EXPECT_EQ(thread_pool->count(), 0);
 
 	delete thread_pool;
-	delete main_method;
 }
 
 TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
@@ -143,8 +140,6 @@ TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 	EXPECT_EQ(test_thread.is_hit, true);
 
 	delete thread_pool;
-	delete count_method;
-	delete hit_method;
 }
 
 TEST(MultipleTasksMultipleExecutions, MultipleStops) {
@@ -170,7 +165,6 @@ TEST(MultipleTasksMultipleExecutions, MultipleStops) {
 	EXPECT_EQ(test_thread.count, 100);
 
 	delete thread_pool;
-	delete count_method;
 }
 
 } // unnammed namespace

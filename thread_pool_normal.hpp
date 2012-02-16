@@ -14,7 +14,6 @@
 #include "lock.hpp"
 #include "callback.hpp"
 #include "thread_pool.hpp"
-#include "safe_queue.hpp"
 
 namespace base {
 using base::Mutex;
@@ -45,7 +44,7 @@ private:
 	ConditionVar not_empty_; //for waking up threads
 	vector<pthread_t> thread_list_; // holds the collection of threads in the pool
 	Callback<void>* thread_method_; // the callback for the the method that runs tasks
-	mutable SafeQueue<Callback<void>*> task_queue_; // the queue of tasks to be completed
+	mutable queue<Callback<void>*> task_queue_; // the queue of tasks to be completed
   map<Callback<void>*, int> delete_list_;
 };
 

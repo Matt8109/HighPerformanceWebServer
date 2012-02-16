@@ -44,10 +44,8 @@ template <typename T>
 T SafeQueue<T>::pop() {
 	T return_value;
 
-	sync_root.lock();
 	return_value = internal_queue.front(); 
 	internal_queue.pop();
-  sync_root.unlock();
 
 	return return_value;
 }
