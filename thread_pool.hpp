@@ -1,7 +1,6 @@
 #ifndef MCP_BASE_THREAD_POOL_HEADER
 #define MCP_BASE_THREAD_POOL_HEADER
 
-#include <list>
 #include <pthread.h>
 
 #include "lock.hpp"
@@ -22,7 +21,7 @@ public:
   // worker issued new addTask()s.
   //
   // REQUIRES: stop() have completed executing.
-  virtual ~ThreadPool(); 
+  virtual ~ThreadPool() {}
 
   // Requests the execution of 'task' on an undetermined worker thread.
   virtual void addTask(Callback<void>* task) = 0;
