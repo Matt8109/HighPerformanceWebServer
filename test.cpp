@@ -12,6 +12,9 @@ class test {
 		}
 };
 
+
+void TestRef(Callback<void>* test_var, map<Callback<void>*, int>* map);
+
 int main() { 
 	map<Callback<void>*, int> my_map;
   test my_obj;
@@ -21,7 +24,7 @@ int main() {
 	my_map[test_cb] = my_map[test_cb]++;
 	my_map[test_cb] = my_map[test_cb]++;
 
-	TestRef(&my_map, test_cb);
+	TestRef(test_cb, &my_map);
 
 	cout << my_map[test_cb];
 
@@ -29,6 +32,5 @@ int main() {
 }
 
 void TestRef(Callback<void>* test_var, map<Callback<void>*, int>* map) {
-	*map[test_var] = *map[test_var]++;
+	(*map)[test_var] = (*map)[test_var]++;
 }
-

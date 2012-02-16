@@ -16,9 +16,18 @@ ThreadPoolNormal::~ThreadPoolNormal() {
 }
 
 void ThreadPoolNormal::stop() {
+  ConditionVar while_not_empty_;
+
+	sync_root_.lock();
+  status_ = IS_STOPPING; // from now on no new tasks will be accepted
+	sync_root_.unlock();
+
+	while (task_queue_.count() != 0)
+		while_not_empty_.timedWait(
+
 }
 
-void ThreadPoolNormal::addTask(Callback<void>* task) {
+void ThreadPoolNormal::addTask(Callback<void>* :task) {
 	if (status_ == IS_RUNNING) { // the pool is still running
 		sync_root_.lock(); //making internal changes
 
@@ -61,13 +70,19 @@ void ThreadPoolNormal::ThreadMethod() {
 	
 		(*cb)(); // execute the task
 
-		if (!cb->once()) { // if the callback is used multiple times, decrement the count
+		if (!cb->once()) { // if the callback is used multiple times
+			int ref_count;   // the reference count for the callback
+
 			sync_root_.lock();
+			delete_list_[cb] = delete_list_[cb]--;  // decrease reference count
+			ref_count = delete_list_[cb];
+
+			if (ref_count == 0)  // if this was the last reference to the callback
+				delete cb;         // then it is safe to delete
+					
 			sync_root_.unlock();
 		}
 	}
-
-
 }
 
 } // namespace base

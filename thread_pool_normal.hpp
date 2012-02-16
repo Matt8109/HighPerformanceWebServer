@@ -5,10 +5,11 @@
 #define IS_STOPPING 1
 #define IS_STOPPED 2
 
+#include <map>
 #include <vector>
 #include <pthread.h>
-#include <map>
 
+#include "lock.hpp"
 #include "callback.hpp"
 #include "thread_pool.hpp"
 #include "safe_queue.hpp"
