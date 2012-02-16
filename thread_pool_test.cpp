@@ -97,7 +97,7 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	Callback<void>* stop_method =
 		makeCallableOnce(&TestClass::stop, &test_thread);
 
-	for (int i=0; i<10; i++)
+	for (int i=0; i< CORE_COUNT - 1; i++)  // add tasks, but want one free thread
 		thread_pool->addTask(main_method);
 	
 	thread_pool->addTask(stop_method);

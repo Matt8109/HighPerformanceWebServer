@@ -1,7 +1,7 @@
 #define THREAD_COUNT_SM 2 //small test size
 #define THREAD_COUNT_MD 8 // medium test size
 #define THREAD_COUNT_LG 20 // large test size
-#define LOOP_COUNT 5000 // the number of tasks for each thread_pool
+#define LOOP_COUNT 500000 // the number of tasks for each thread_pool
 #define TASK_SLOW_COUNT 500 // time to waste in the slow consumer per action
 #define TASK_ADD_SLOW_COUNT 50 // time to waste before queuing new tasks
 
