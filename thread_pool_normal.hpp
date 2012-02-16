@@ -8,6 +8,7 @@
 #include <map>
 #include <time.h>
 #include <vector>
+#include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -40,7 +41,9 @@ private:
 	void ThreadMethod();
 
 	int status_; //the status of the pool, IS_RUNNING, IS_STOPPING, IS_STOPPED
+	int stop_count_; // the number of threads waiting on a stop
 	int thread_count_; //the number of threads in the thread pool
+	int active_thread_count_; // number of thread currently running
 	Mutex sync_root_; // for syn
 	ConditionVar not_empty_; //for waking up threads
 	vector<pthread_t> thread_list_; // holds the collection of threads in the pool

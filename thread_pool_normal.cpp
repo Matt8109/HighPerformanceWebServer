@@ -4,7 +4,9 @@ namespace base {
 
 ThreadPoolNormal::ThreadPoolNormal(int num_workers) 
     : status_(IS_RUNNING),
-		 	thread_count_(num_workers) {
+		  stop_count_(0),
+		 	thread_count_(num_workers),
+			active_thread_count_(num_workers)	{
   thread_method_ = makeCallableMany(&ThreadPoolNormal::ThreadMethod, this);	
 	
 	for (int i = 0; i < thread_count_; i++)
@@ -18,8 +20,25 @@ ThreadPoolNormal::~ThreadPoolNormal() {
 void ThreadPoolNormal::stop() {
 	pthread_t current_thread_ = pthread_self();
 
+	struct timespec timeout;
+  timeout.tv_sec = 0;
+	timeout.tv_nsec = 300;
+
 	sync_root_.lock();
+	// check to see if we are actually a thread in the pool
+	for (int i = 0; i < thread_count_; i++) {
+		if (thread_list_[i] == current_thread_) 
+			stop_count_++;	// let others know we are waiting if a pool thread
+	}
+
 	if (status_ == IS_STOPPING) { // someone has already called stop
+		//now we have to wait for the other thread to finish shutting down the pool
+		while (status_ != IS_STOPPED)
+	  	not_empty_.timedWait(&sync_root_, &timeout);		
+
+		// ok the other thread has finished stopping the pool, we can exit
+		stop_count_--; // not needed, but might help debug
+
 		sync_root_.unlock();
 		return;
 	}
@@ -30,16 +49,16 @@ void ThreadPoolNormal::stop() {
 	while (task_queue_.size() != 0)
 		usleep(50000); // 50 ms
 
-	// at this point the queue is empty, nothing more can be added, so we just
-	// need to wait on all the threads to finish
-  for (int i = 0; i < thread_count_; i++) {
-		if (thread_list_[i] != current_thread_) { // we dont want to call join on us
-			pthread_join(thread_list_[i], NULL);
-		}
-	}
+	// try to join on all threads
+	for (int i = 0; i < thread_count_; i++)
+		pthread_tryjoin_np(thread_list_[i], NULL);
 
-  // ok once we are here, we are done
-  sync_root_.lock();
+	sync_root_.lock();
+	
+	// wait until all threads not calling stop have completed
+	while (active_thread_count_ >  stop_count_)
+		not_empty_.timedWait(&sync_root_, &timeout);		
+
 	status_ = IS_STOPPED;
 	sync_root_.unlock();	
 }
@@ -78,7 +97,7 @@ void ThreadPoolNormal::ThreadMethod() {
 	Callback<void>* cb;
   struct timespec timeout;
   timeout.tv_sec = 0;
-	timeout.tv_nsec = 100;
+	timeout.tv_nsec = 300;
 
 	while (true) {
 		sync_root_.lock();
@@ -87,6 +106,7 @@ void ThreadPoolNormal::ThreadMethod() {
 	  	not_empty_.timedWait(&sync_root_, &timeout);		
 
 		if (task_queue_.size() == 0 && status_ != IS_RUNNING) { 
+			active_thread_count_--; // helps the stop call
 			sync_root_.unlock(); // if the pool is stopped, and queue empty
 			return;
 		}
