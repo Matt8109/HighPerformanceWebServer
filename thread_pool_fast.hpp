@@ -16,6 +16,7 @@ public:
   virtual void addTask(Callback<void>* task);
   virtual void stop();
   virtual int count() const;
+	virtual bool isStopped();
 
 private:
 

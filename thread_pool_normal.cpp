@@ -70,6 +70,10 @@ int ThreadPoolNormal::count() const {
 	return task_queue_.size();
 }
 
+bool ThreadPoolNormal::isStopped() {
+		return status_ == IS_STOPPED ? true : false;
+}
+
 void ThreadPoolNormal::ThreadMethod() {
 	Callback<void>* cb;
   struct timespec timeout;
@@ -82,8 +86,8 @@ void ThreadPoolNormal::ThreadMethod() {
 		while (task_queue_.size() == 0 && status_ == IS_RUNNING)
 	  	not_empty_.timedWait(&sync_root_, &timeout);		
 
-		if (task_queue_.size() == 0 && status_ != IS_RUNNING) { // if the pool is
-			sync_root_.unlock();																	// stopped and the queue empty
+		if (task_queue_.size() == 0 && status_ != IS_RUNNING) { 
+			sync_root_.unlock(); // if the pool is stopped, and queue empty
 			return;
 		}
 

@@ -67,7 +67,7 @@ public:
 		// Slow the counter down, for the benchmark test
 		void slowIncrease(int loopCount) {
 			for (int i=0; i<loopCount; i++) 
-				is_hit = !is_hit; // hopefully something the compiler wont optimize out
+				is_hit = !is_hit; // hopefully something the compiler wont optimize 
 
 			sync_root.lock();
 			count++;
@@ -75,12 +75,12 @@ public:
 		}
 
 		void stop() {
-			if (!thread_pool_)
+			if (thread_pool_)
 				thread_pool_->stop();
 		}
-
+		
+  ThreadPool* thread_pool_;
 private:
- ThreadPool* thread_pool_;
  Mutex sync_root;
 };
 

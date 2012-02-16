@@ -35,6 +35,9 @@ public:
 
   // Returns the current size of the dispatch queue (pending tasks).
   virtual int count() const = 0;
+
+	// Returns whether the thread pool has been stopped or not already
+	virtual bool isStopped() = 0;
 };
 
 } // namespace base

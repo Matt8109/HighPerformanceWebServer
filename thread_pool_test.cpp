@@ -105,6 +105,8 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	for (int i=0; i<1000; i++)
 		thread_pool->addTask(main_method);
 
+	while (!thread_pool->isStopped()) { } // wait for the pool to stop
+
 	// This probably isn't the best way to test, but essentially
 	// we want to make sure that the thread pool is being stopped
 	// before we reach the max possible count if all the tasks
