@@ -128,7 +128,7 @@ TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 		makeCallableMany(&TestClass::increase, &test_thread);
 
 	Callback<void>* hit_method =
-		makeCallableMany(&TestClass::flip, &test_thread);
+		makeCallableMany(&TestClass::hit, &test_thread);
 
 	for (int i=0; i<99; i++)
 	{
