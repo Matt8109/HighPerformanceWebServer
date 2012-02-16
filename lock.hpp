@@ -19,13 +19,13 @@ public:
   Mutex()         { pthread_mutex_init(&m_, NULL); }
   ~Mutex()        { pthread_mutex_destroy(&m_); }
 
+  pthread_mutex_t m_;
+
   void lock()     { pthread_mutex_lock(&m_); }
   void unlock()   { pthread_mutex_unlock(&m_); }
 
 private:
   friend class ConditionVar;
-
-  pthread_mutex_t m_;
 
   // Non-copyable, non-assignable
   Mutex(Mutex &);

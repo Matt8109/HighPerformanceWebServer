@@ -16,18 +16,35 @@ ThreadPoolNormal::~ThreadPoolNormal() {
 }
 
 void ThreadPoolNormal::stop() {
-  ConditionVar while_not_empty_;
+	pthread_t current_thread_ = pthread_self();
 
 	sync_root_.lock();
+	if (status_ == IS_STOPPING) { // someone has already called stop
+		sync_root_.unlock();
+		return;
+	}
+
   status_ = IS_STOPPING; // from now on no new tasks will be accepted
 	sync_root_.unlock();
 
-	while (task_queue_.count() != 0)
-		while_not_empty_.timedWait(
+	while (task_queue_.size() != 0)
+		usleep(50000); // 50 ms
 
+	// at this point the queue is empty, nothing more can be added, so we just
+	// need to wait on all the threads to finish
+  for (int i = 0; i < thread_count_; i++) {
+		if (thread_list_[i] != current_thread_) { // we dont want to call join on us
+			pthread_join(thread_list_[i], NULL);
+		}
+	}
+
+  // ok once we are here, we are done
+  sync_root.lock();
+	status_ = IS_STOPPED;
+	sync_root.unlock();	
 }
 
-void ThreadPoolNormal::addTask(Callback<void>* :task) {
+void ThreadPoolNormal::addTask(Callback<void>* task) {
 	if (status_ == IS_RUNNING) { // the pool is still running
 		sync_root_.lock(); //making internal changes
 
@@ -37,7 +54,7 @@ void ThreadPoolNormal::addTask(Callback<void>* :task) {
 		task_queue_.push(task);
 		sync_root_.unlock();
 
-		pthread_cond_signal(&not_empty_); // alert the threads
+		not_empty_.signal(); // alert the threads
 	}
 	else if (status_ == IS_STOPPING) { // in the process of shutting
 		if (!task->once()) { // we need to delete the task, but it might be running
@@ -49,20 +66,25 @@ void ThreadPoolNormal::addTask(Callback<void>* :task) {
 }
 
 int ThreadPoolNormal::count() const {
-	task_queue.size();
+	return task_queue_.size();
 }
 
 void ThreadPoolNormal::ThreadMethod() {
 	Callback<void>* cb;
+  struct timespec timeout;
+  timeout.tv_sec = 0;
+	timeout.tv_nsec = 1000;
 
 	while (true) {
 		sync_root_.lock();
 
-		while (task_queue_.count() == 0 && status_ != IS_STOPPED)
-			pthread_cond_wait(&not_empty_, &sync_root_);
+		while (task_queue_.size() == 0 && status_ == IS_RUNNING)
+	  	not_empty_.timedWait(&sync_root_, &timeout);		
 
-		if (status_ == IS_STOPPED) // if the pool is stopped we can exit out
-			return; 
+		if (task_queue_.size() == 0 && status_ != IS_RUNNING) { // if the pool is
+			sync_root_.unlock();																	// stopped and the queue empty
+			return;
+		}
 
 		cb = task_queue_.pop();
 
@@ -70,7 +92,7 @@ void ThreadPoolNormal::ThreadMethod() {
 	
 		(*cb)(); // execute the task
 
-		if (!cb->once()) { // if the callback is used multiple times
+		if (!cb) { // if the callback is used multiple times
 			int ref_count;   // the reference count for the callback
 
 			sync_root_.lock();

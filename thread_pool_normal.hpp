@@ -6,7 +6,9 @@
 #define IS_STOPPED 2
 
 #include <map>
+#include <time.h>
 #include <vector>
+#include <unistd.h>
 #include <pthread.h>
 
 #include "lock.hpp"
@@ -40,10 +42,10 @@ private:
 	int status_; //the status of the pool, IS_RUNNING, IS_STOPPING, IS_STOPPED
 	int thread_count_; //the number of threads in the thread pool
 	Mutex sync_root_; // for syn
-	pthread_cond_t not_empty_; // wait condition, signal when the queue gets a new item
+	ConditionVar not_empty_; //for waking up threads
 	vector<pthread_t> thread_list_; // holds the collection of threads in the pool
 	Callback<void>* thread_method_; // the callback for the the method that runs tasks
-	SafeQueue<Callback<void>*> task_queue_; // the queue of tasks to be completed
+	mutable SafeQueue<Callback<void>*> task_queue_; // the queue of tasks to be completed
   map<Callback<void>*, int> delete_list_;
 };
 

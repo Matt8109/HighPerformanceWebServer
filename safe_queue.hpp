@@ -20,12 +20,10 @@ public:
 
 	void push(T value);
 	T pop();
-	T front();
-	T back();
 	int size();
 
 private:
-	Mutex sync_root;
+	mutable Mutex sync_root;
   queue<T> internal_queue;
 };
 
@@ -47,30 +45,9 @@ T SafeQueue<T>::pop() {
 	T return_value;
 
 	sync_root.lock();
-	return_value = internal_queue.pop();
+	return_value = internal_queue.front(); 
+	internal_queue.pop();
   sync_root.unlock();
-
-	return return_value;
-}
-
-template <typename T>
-T SafeQueue<T>::front() {
-	T return_value;
-
-	sync_root.lock();
-	return_value = internal_queue.front();
-	sync_root.unlock();
-
-	return return_value;
-}
-
-template <typename T>
-T SafeQueue<T>::back() {
-	T return_value;
-
-	sync_root.lock();
-	return_value = internal_queue.back();
-	sync_root.unlock();
 
 	return return_value;
 }
@@ -82,6 +59,9 @@ int SafeQueue<T>::size() {
 	sync_root.lock();
 	size = internal_queue.size();
 	sync_root.unlock();
+
+	if (size < 0)
+		size = 0;
 
 	return size;
 }
