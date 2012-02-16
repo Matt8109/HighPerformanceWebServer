@@ -26,4 +26,8 @@ int ThreadPoolFast::count() const {
   return 0;
 }
 
+bool ThreadPoolFast::isStopped() {
+	return false;
+}
+
 } // namespace base

@@ -61,7 +61,6 @@ TEST(SingleTaskMultipleExecutions, Count) {
 	EXPECT_EQ(test_thread.count, 2);
 	
 	delete thread_pool;
-	delete thread_method;
 }
 
 // Create and run a task, stop the the pool, schedule another
@@ -85,7 +84,6 @@ TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 	EXPECT_EQ(test_thread.count, 1);
 
 	delete thread_pool;
-	delete thread_method;
 }
 
 TEST(SingleTaskMultipleExecution, InternalTaskStop) {
@@ -99,13 +97,15 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	Callback<void>* stop_method =
 		makeCallableOnce(&TestClass::stop, &test_thread);
 
-	for (int i=0; i<10; i++)
+	for (int i=0; i< CORE_COUNT - 1; i++)  // add tasks, but want one free thread
 		thread_pool->addTask(main_method);
 	
 	thread_pool->addTask(stop_method);
 	
 	for (int i=0; i<1000; i++)
 		thread_pool->addTask(main_method);
+
+	while (!thread_pool->isStopped()) { } // wait for the pool to stop
 
 	// This probably isn't the best way to test, but essentially
 	// we want to make sure that the thread pool is being stopped
@@ -117,7 +117,6 @@ TEST(SingleTaskMultipleExecution, InternalTaskStop) {
 	EXPECT_EQ(thread_pool->count(), 0);
 
 	delete thread_pool;
-	delete main_method;
 }
 
 TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
@@ -129,7 +128,7 @@ TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 		makeCallableMany(&TestClass::increase, &test_thread);
 
 	Callback<void>* hit_method =
-		makeCallableMany(&TestClass::flip, &test_thread);
+		makeCallableMany(&TestClass::hit, &test_thread);
 
 	for (int i=0; i<99; i++)
 	{
@@ -143,8 +142,6 @@ TEST(MultipleTasksMultipleExecutions, ExternalTaskStop) {
 	EXPECT_EQ(test_thread.is_hit, true);
 
 	delete thread_pool;
-	delete count_method;
-	delete hit_method;
 }
 
 TEST(MultipleTasksMultipleExecutions, MultipleStops) {
@@ -170,7 +167,6 @@ TEST(MultipleTasksMultipleExecutions, MultipleStops) {
 	EXPECT_EQ(test_thread.count, 100);
 
 	delete thread_pool;
-	delete count_method;
 }
 
 } // unnammed namespace

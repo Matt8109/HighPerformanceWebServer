@@ -5,12 +5,14 @@
 #include <pthread.h>
 
 #include "lock.hpp"
+#include "thread.hpp"
 #include "callback.hpp"
 #include "safe_queue.hpp"
 
 namespace base {
 
-struct ThreadWrapper;
+using base::makeThread;
+using base::makeCallableMany;
 
 // Abstract base class for experimenting with thread-pool strategies.
 class ThreadPool {
@@ -35,29 +37,8 @@ public:
   // Returns the current size of the dispatch queue (pending tasks).
   virtual int count() const = 0;
 
-
-protected:
-	// Needed to create the correct number of threads for the pool
-	ThreadPool(int num_workers);
-
-	bool stopping_; //if the thread pool is stopped, or processing stop
-	int thread_count_;
-	Mutex sync_root_; //for general locking
-  std::list<ThreadWrapper> thread_list_;
-	SafeQueue<Callback<void>*> pending_tasks_;
-};
-
-struct ThreadWrapper {
-public:
-	pthread_t thread_;
-	bool is_running_;
-	Callback<void>* current_task_;  
-
-	ThreadWrapper(pthread_t thread) 
-		  : thread_(thread) {
-  }
-
-	~ThreadWrapper() { }
+	// Returns whether the thread pool has been stopped or not already
+	virtual bool isStopped() = 0;
 };
 
 } // namespace base
