@@ -133,7 +133,4 @@ void ThreadPoolNormal::ThreadMethod() {
 	}
 }
 
-void ThreadTask() {
-}
-
 } // namespace base
