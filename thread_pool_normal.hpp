@@ -5,7 +5,6 @@
 #define IS_STOPPING 1
 #define IS_STOPPED 2
 
-#include <map>
 #include <time.h>
 #include <vector>
 #include <errno.h>
@@ -20,7 +19,6 @@ namespace base {
 using base::Mutex;
 using base::SafeQueue;
 using std::vector;
-using std::map;
 
 class ThreadPoolNormal : public ThreadPool {
 public:
@@ -49,7 +47,6 @@ private:
 	vector<pthread_t> thread_list_; // holds the collection of threads in the pool
 	Callback<void>* thread_method_; // the callback for the the method that runs tasks
 	mutable queue<Callback<void>*> task_queue_; // the queue of tasks to be completed
-  map<Callback<void>*, int> delete_list_;
 };
 
 } // namespace base

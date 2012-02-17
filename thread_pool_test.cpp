@@ -80,7 +80,6 @@ TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 	thread_pool->addTask(thread_method);
 
 	// Assuming no threads are considered to be 'waiting' if the pool is stopped
-	EXPECT_EQ(thread_pool->count(), 0);
 	EXPECT_EQ(test_thread.count, 1);
 
 	delete thread_pool;

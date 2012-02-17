@@ -199,6 +199,15 @@ def build(bld):
                       unit_test = 1
                     )
 
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'thread_pool_test_fast.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'thread_pool_test_fast',
+                      unit_test = 1
+                    )
+
     #****************************************
     # Binaries
     #
