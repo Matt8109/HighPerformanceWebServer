@@ -1,6 +1,7 @@
 #include <stdio.h>  // perror
 #include <stdlib.h> // exit
 
+#include "logging.hpp"
 #include "thread.hpp"
 #include "thread_registry.hpp"
 
@@ -19,9 +20,8 @@ pthread_t makeThread(Callback<void>* body) {
   void* arg = reinterpret_cast<void*>(body);
   pthread_t tid;
   if (pthread_create(&tid, NULL, threadFunction, arg) != 0) {
-    perror("Can't create thread");
-    delete body;
-    exit(1);
+    LOG(LogMessage::FATAL) << "Can't create thread";
+    return -1;
   }
   return tid;
 }
