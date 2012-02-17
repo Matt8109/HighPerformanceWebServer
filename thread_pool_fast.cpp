@@ -86,8 +86,8 @@ void ThreadPoolFast::addTask(Callback<void>* task) {
 			pending_task_ = task;
 
 			fast_sync_root_.unlock();
-			no_fast_task_.signal();
 			sync_root_.unlock();
+			no_fast_task_.signal();
 
 			return;
 		} else { // we need to queue
@@ -133,9 +133,11 @@ void ThreadPoolFast::ThreadMethod() {
 			fast_sync_root_.unlock();   // give someone else the shot
 
 			(*cb)();                    // execute the callback
+		} else {
+			fast_sync_root_.unlock();   // so we can grab again in correct order
 		}
 
-		fast_sync_root_.unlock();
+		// obtain the locks in specifc order to prevent deadlock
 		sync_root_.lock();
 		fast_sync_root_.lock();
 
@@ -147,6 +149,9 @@ void ThreadPoolFast::ThreadMethod() {
 
 				return;
     }
+
+		fast_sync_root_.unlock();
+		sync_root_.unlock();
 		
 		//if we got here, means there is probabally something in the queue
 		while (true) {

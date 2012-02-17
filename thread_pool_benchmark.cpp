@@ -164,6 +164,10 @@ int main(int argc, char* argv[]) {
     usage(argc, argv);
     return -1;
   }
+	
+	std::cout << "\nThese take some time, please give them a moment.\n" 
+						<< "Even if the cursor stops blinking.\n\n"
+			      << std::flush;
 
   // no queueing of tasks really
   if (all || num[0]) {
