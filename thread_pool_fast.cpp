@@ -6,7 +6,9 @@ ThreadPoolFast::ThreadPoolFast(int num_workers)
     : status_(IS_RUNNING),
 		  stop_count_(0),
 		 	thread_count_(num_workers),
-			active_thread_count_(num_workers)	{
+			active_thread_count_(num_workers),
+			free_thread_count_(num_workers),
+			pending_task_(NULL)	{
   thread_method_ = makeCallableMany(&ThreadPoolFast::ThreadMethod, this);	
 	
 	for (int i = 0; i < thread_count_; i++)
@@ -43,7 +45,12 @@ void ThreadPoolFast::stop() {
 		return;
 	}
 
-  status_ = IS_STOPPING; // from now on no new tasks will be accepted
+  status_ = IS_STOPPING;      // from now on no new tasks will be accepted
+
+	fast_sync_root_.lock();     // wake sleeping threads
+	no_fast_task_.signalAll();
+	fast_sync_root_.unlock();
+
 	sync_root_.unlock();
 
 	while (task_queue_.size() != 0)
@@ -67,21 +74,31 @@ void ThreadPoolFast::addTask(Callback<void>* task) {
 	if (status_ == IS_RUNNING) { // the pool is still running
 		sync_root_.lock(); //making internal changes
 
-		if (!task->once())
-			delete_list_[task] = delete_list_[task]++; // increase our reference count
-	
-		task_queue_.push(task);
+		// fast thread pool change, essentially dump the task in a shared var
+		// and alert a free thread to pick it up
+		fast_sync_root_.lock();
+
+		if (free_thread_count_ != 0) {
+			
+			while (pending_task_ != NULL)
+				no_fast_task_.wait(&fast_sync_root_); // wait until pending task is empty
+
+			pending_task_ = task;
+
+			fast_sync_root_.unlock();
+			no_fast_task_.signal();
+			sync_root_.unlock();
+
+			return;
+		} else { // we need to queue
+			fast_sync_root_.unlock();
+		}
+
+		task_queue_.push(task); // queue the task as we would before
 
 		sync_root_.unlock();
 
 		not_empty_.signal(); // alert the threads
-	}
-	else if (status_ == IS_STOPPING) { // in the process of shutting
-		if (!task->once()) { // we need to delete the task, but it might be running
-		}
-	} else {
-		if (!task->once())
-			delete task; // safe to delete, the pool is stopped
 	}
 }
 
@@ -100,35 +117,56 @@ void ThreadPoolFast::ThreadMethod() {
 	timeout.tv_nsec = 300;
 
 	while (true) {
-		sync_root_.lock();
+		
+		fast_sync_root_.lock();
 
-		while (task_queue_.size() == 0 && status_ == IS_RUNNING)
-	  	not_empty_.timedWait(&sync_root_, &timeout);		
+		while (pending_task_ == NULL && status_ == IS_RUNNING 
+				&& task_queue_.size() == 0)
+			no_fast_task_.timedWait(&fast_sync_root_, &timeout);
 
-		if (task_queue_.size() == 0 && status_ != IS_RUNNING) { 
-			active_thread_count_--; // helps the stop call
-			sync_root_.unlock(); // if the pool is stopped, and queue empty
-			return;
+			free_thread_count_--;       // mark ourself as being active
+
+		if (pending_task_ != NULL) {
+			cb = pending_task_;         // grab the task
+			pending_task_ = NULL;       // clear the task for someone else
+			no_fast_task_.signalAll();
+			fast_sync_root_.unlock();   // give someone else the shot
+
+			(*cb)();                    // execute the callback
 		}
 
-		cb = task_queue_.front();
-		task_queue_.pop();
+		fast_sync_root_.unlock();
+		sync_root_.lock();
+		fast_sync_root_.lock();
 
-		sync_root_.unlock();
-	
-		(*cb)(); // execute the task
+		// we are stopping
+		if (status_ != IS_RUNNING && task_queue_.size() == 0) {
+				active_thread_count_--;
+				fast_sync_root_.unlock();
+				sync_root_.unlock();
 
-		if (!cb) { // if the callback is used multiple times
-			int ref_count;   // the reference count for the callback
-
+				return;
+    }
+		
+		//if we got here, means there is probabally something in the queue
+		while (true) {
 			sync_root_.lock();
-			delete_list_[cb] = delete_list_[cb]--;  // decrease reference count
-			ref_count = delete_list_[cb];
 
-			if (ref_count == 0)  // if this was the last reference to the callback
-				delete cb;         // then it is safe to delete
-					
-			sync_root_.unlock();
+			if (task_queue_.size() != 0) { // we have something to do
+						cb = task_queue_.front();
+						task_queue_.pop();
+
+						sync_root_.unlock();
+
+						(*cb)();
+			} else { // the queue is empty, go to sleep
+				fast_sync_root_.lock();
+				free_thread_count_++;
+				fast_sync_root_.unlock();
+				sync_root_.unlock();
+
+				break;
+			}
 		}
 	}
 }

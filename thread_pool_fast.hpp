@@ -5,7 +5,6 @@
 #define IS_STOPPING 1
 #define IS_STOPPED 2
 
-#include <map>
 #include <time.h>
 #include <vector>
 #include <errno.h>
@@ -20,7 +19,6 @@ namespace base {
 using base::Mutex;
 using base::SafeQueue;
 using std::vector;
-using std::map;
 
 class ThreadPoolFast : public ThreadPool {
 public:
@@ -44,12 +42,17 @@ private:
 	int stop_count_; // the number of threads waiting on a stop
 	int thread_count_; //the number of threads in the thread pool
 	int active_thread_count_; // number of thread currently running
+	int free_thread_count_; //the number of free threads
 	Mutex sync_root_; // for syn
 	ConditionVar not_empty_; //for waking up threads
 	vector<pthread_t> thread_list_; // holds the collection of threads in the pool
 	Callback<void>* thread_method_; // the callback for the the method that runs tasks
 	mutable queue<Callback<void>*> task_queue_; // the queue of tasks to be completed
-  map<Callback<void>*, int> delete_list_;
+
+	// for fast communication avoiding the queue
+	Callback<void>* pending_task_;
+	Mutex fast_sync_root_;
+	ConditionVar no_fast_task_;
 };
 
 } // namespace base
