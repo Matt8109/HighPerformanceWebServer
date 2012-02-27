@@ -81,7 +81,9 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
-                      source = """ child_process.cpp
+                      source = """ buffer.cpp
+                                   child_process.cpp
+                                   file_cache.cpp
                                    thread.cpp
                                    thread_pool_fast.cpp
                                    thread_pool_normal.cpp
@@ -110,6 +112,23 @@ def build(bld):
     #****************************************
     # tests / benchmarks
     #
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'buffer_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'buffer_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'buffer_benchmark.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'buffer_benchmark'
+                    )
 
     bld.new_task_gen( features = 'cxx cprogram',
                       source = 'callback_test.cpp',
@@ -143,6 +162,15 @@ def build(bld):
                       uselib = '',
                       uselib_local = 'logging',
                       target = 'demo_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'file_cache_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'file_cache_test',
                       unit_test = 1
                     )
 
