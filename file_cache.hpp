@@ -40,7 +40,7 @@ using std::tr1::unordered_map;
 //     are no ongoing cache readers before disposing of the cache
 //
 // Usage:
-//   FileCache my_cache(50 * 10<<20 /* 50MB */);
+//   FileCache my_cache(50<<20 /* 50MB */);
 //
 //   Buffer* buf;
 //   int error;
