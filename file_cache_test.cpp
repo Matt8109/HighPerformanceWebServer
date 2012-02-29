@@ -29,6 +29,8 @@ using base::LogMessage;
 using base::makeCallableOnce;
 using base::makeThread;
 
+typedef FileCache::CacheHandle CacheHandle;
+
 //
 // Support for creating test files
 //
@@ -97,8 +99,29 @@ void FileFixture::createFile(const char* name, size_t size, char c) {
 // Test cases
 //
 
-TEST(Group, Case) {
-  EXPECT_TRUE(true);
+TEST(Basic, Init) {
+  FileCache file_cache(500);
+
+  EXPECT_EQ(file_cache.maxSize(), 500);
+  EXPECT_EQ(file_cache.bytesUsed(), 0);
+  EXPECT_EQ(file_cache.hits(), 0);
+  EXPECT_EQ(file_cache.pins(), 0);
+}
+
+TEST(Statistics, Basic) {
+  int error = 0;
+  Buffer* buff;
+  FileCache file_cache(50 << 20); //50 megs
+
+  CacheHandle handle = file_cache.pin("a.html", &buff, &error);
+
+  EXPECT_NEQ(handle, 0); // will be non-zero if file was read
+
+  EXPECT_EQ(file_cache.maxSize(), 50 << 20);
+  EXPECT_EQ(file_cache.bytesUsed(), 2500);
+  EXPECT_EQ(file_cache.hits(), 0);
+  EXPECT_EQ(file_cache.pins(), 1);
+  EXPECT_EQ(error, 0); // will be non-zero if file was read
 }
 
 }  // unnamed namespace
