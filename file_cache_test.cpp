@@ -61,6 +61,12 @@ public:
   Tester() { }
   ~Tester() { }
 
+  void AddPinFiles() {
+  }
+
+  void UnpinFiles() {
+
+  }
 };
 
 void FileFixture::startUp() {
@@ -185,19 +191,52 @@ TEST(Statistics, Unpinning) {
   CacheHandle handle;
   FileCache file_cache(50 << 20); //50 megs
 
-  handle = file_cache.pin("a.html", &buff, &error);
+  file_cache.pin("a.html", &buff, &error);
   handle = file_cache.pin("a.html", &buff, &error);
   file_cache.unpin(handle);
 
-  handle = file_cache.pin("b.html", &buff, &error);
-  handle = file_cache.pin("1.html", &buff, &error);
+  file_cache.pin("b.html", &buff, &error);
+  file_cache.pin("1.html", &buff, &error);
 
   // request all the file again to test hits
-  handle = file_cache.pin("b.html", &buff, &error);
-  handle = file_cache.pin("1.html", &buff, &error);
+  file_cache.pin("b.html", &buff, &error);
+  file_cache.pin("1.html", &buff, &error);
 
   EXPECT_EQ(file_cache.hits(), 3);
   EXPECT_EQ(file_cache.pins(), 2);
+}
+
+// makes sure we are puring unpinned items
+TEST(Statistics, PurgeUnpinned) {
+  int error = 0;
+  Buffer* buff;
+  CacheHandle handle;
+  FileCache file_cache(5001);
+
+  file_cache.pin("a.html", &buff, &error);
+  handle = file_cache.pin("b.html", &buff, &error);
+
+  file_cache.unpin(handle);
+
+  file_cache.pin("1.html", &buff, &error);
+  file_cache.pin("a.html", &buff, &error);
+
+  EXPECT_EQ(file_cache.hits(), 1);
+  EXPECT_EQ(file_cache.pins(), 2);
+}
+
+TEST(Statistics, FullFailToAdd) {
+  int error = 0;
+  Buffer* buff;
+  CacheHandle handle;
+  FileCache file_cache(250);
+
+  file_cache.pin("a.html", &buff, &error);
+  handle = file_cache.pin("b.html", &buff, &error);
+
+  // the two conditions when  the cache is full
+  EXPECT_EQ(handle, 0);
+  EXPECT_EQ(error, 0);
 }
 
 }  // unnamed namespace
