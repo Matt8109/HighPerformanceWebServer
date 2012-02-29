@@ -1,0 +1,18 @@
+Fast Consumer: (Normal Pool)	
+	0.670773 with 2 threads | 6.48447 with 8 threads | 18.9099 with 20 threads
+Fast Consumer: (Fast Pool)	
+	0.663732 with 2 threads | 3.38484 with 8 threads | 27.5455 with 20 threads
+Slow Consumer: (Normal Pool)	
+	0.772248 with 2 threads | 0.87532 with 8 threads | 0.876767 with 20 threads
+Slow Consumer: (Fast Pool)	
+	0.809626 with 2 threads | 0.878383 with 8 threads | 0.879414 with 20 threads
+
+The above results are those generally seen when running the task on a computer with 4 cores, each of which has hyper-threading - thus is presented to the operating system as 8 total cores. 
+
+As you can see, we then number of threads was equal to, or less than the number of cores in the system, the fast thread pool did perform slightly better. And, importantly, it seems that the fast pool gets a larger bump in performance when using a fast consumer - that is when the task is short and we are unlikely to get backed up.
+
+I think the reason we see the performance slow down in the fast pool when we use a slower consumer comes from the fact that if threads aren’t free, the cost of performing the check for free threads adds up. Not only must we check for free threads - and manage the locks associated with that - but if that check fails we have to go the the same code that the slower pool goes through. 
+
+Once can also see that the fast pool took a substantial hit when the number of threads greatly exceeded available cores. While I am not completely sure why, I believe it is partially due to my implementation which locks and unlocks a lot of mutexes. This blocking and unblocking of threads probably causes a substantial amount of context switches from threads that can only execute small chunks of code, before needing another lock.
+
+Thus the take aways are. First, never make more threads than cores. And second, if you are likely to have low thread utilization, the optimized fast pool might be worth using. However, if you expect the thread pool to be backed up with longer running threads, you might as well pay the queueing costs upfront with the normal queue.

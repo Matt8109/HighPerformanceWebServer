@@ -96,9 +96,9 @@ void ThreadPoolFast::addTask(Callback<void>* task) {
 
 		task_queue_.push(task); // queue the task as we would before
 
+		not_empty_.signal(); // alert the threads
 		sync_root_.unlock();
 
-		not_empty_.signal(); // alert the threads
 	}
 }
 
