@@ -56,6 +56,13 @@ private:
 
 };
 
+class Tester {
+public:
+  Tester() { }
+  ~Tester() { }
+
+};
+
 void FileFixture::startUp() {
   for (size_t i = 0; i < files_size_; i += 3) {
     size_t size = atoi(files_[i+1]);
@@ -111,17 +118,86 @@ TEST(Basic, Init) {
 TEST(Statistics, Basic) {
   int error = 0;
   Buffer* buff;
+  CacheHandle handle;
   FileCache file_cache(50 << 20); //50 megs
 
-  CacheHandle handle = file_cache.pin("a.html", &buff, &error);
+  handle = file_cache.pin("a.html", &buff, &error);
+
+  EXPECT_NEQ(handle, 0); // will be non-zero if file was read
+
+  handle = file_cache.pin("a.html", &buff, &error);
 
   EXPECT_NEQ(handle, 0); // will be non-zero if file was read
 
   EXPECT_EQ(file_cache.maxSize(), 50 << 20);
   EXPECT_EQ(file_cache.bytesUsed(), 2500);
-  EXPECT_EQ(file_cache.hits(), 0);
+  EXPECT_EQ(file_cache.hits(), 1);
   EXPECT_EQ(file_cache.pins(), 1);
   EXPECT_EQ(error, 0); // will be non-zero if file was read
+}
+
+TEST(Statistics, CacheThrash) {
+  int error = 0;
+  Buffer* buff;
+  CacheHandle handle;
+  FileCache file_cache(2501); //prevents any one item from staying in the cache
+
+  // all of these files should be forced out of the cache due to the small
+  // cache size, thus ensuring that we dont have any cache hits
+  for (int i = 0; i < 10; i++) {
+    handle = file_cache.pin("a.html", &buff, &error);
+    file_cache.unpin(handle);
+
+    handle = file_cache.pin("1.html", &buff, &error);
+    file_cache.unpin(handle);
+
+    handle = file_cache.pin("b.html", &buff, &error);
+    file_cache.unpin(handle);
+  }
+
+  EXPECT_EQ(file_cache.hits(), 0);
+  EXPECT_EQ(file_cache.pins(), 0);
+}
+
+TEST(Statistics, LargeCacheNoPurges) {
+  int error = 0;
+  Buffer* buff;
+  FileCache file_cache(50 << 20); //50 megs
+
+  for (int i = 0; i < 11; i++) {
+    file_cache.pin("a.html", &buff, &error);
+    file_cache.pin("b.html", &buff, &error);
+    file_cache.pin("c.html", &buff, &error);
+    file_cache.pin("1.html", &buff, &error);
+    file_cache.pin("2.html", &buff, &error);
+    file_cache.pin("3.html", &buff, &error);
+    file_cache.pin("4.html", &buff, &error);
+    file_cache.pin("5.html", &buff, &error);
+  }
+
+  EXPECT_EQ(file_cache.hits(), 50); // 5 items, requested 11 times, first misses
+  EXPECT_EQ(file_cache.pins(), 8);
+}
+
+TEST(Statistics, Unpinning) {
+  int error = 0;
+  Buffer* buff;
+  CacheHandle handle;
+  FileCache file_cache(50 << 20); //50 megs
+
+  handle = file_cache.pin("a.html", &buff, &error);
+  handle = file_cache.pin("a.html", &buff, &error);
+  file_cache.unpin(handle);
+
+  handle = file_cache.pin("b.html", &buff, &error);
+  handle = file_cache.pin("1.html", &buff, &error);
+
+  // request all the file again to test hits
+  handle = file_cache.pin("b.html", &buff, &error);
+  handle = file_cache.pin("1.html", &buff, &error);
+
+  EXPECT_EQ(file_cache.hits(), 3);
+  EXPECT_EQ(file_cache.pins(), 2);
 }
 
 }  // unnamed namespace
