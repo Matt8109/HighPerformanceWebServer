@@ -1,12 +1,13 @@
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
 #include <sstream>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <vector>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <vector>
 
 #include <tr1/random>
 
@@ -14,8 +15,8 @@
 #include "callback.hpp"
 #include "file_cache.hpp"
 #include "logging.hpp"
-#include "thread.hpp"
 #include "test_unit.hpp"
+#include "thread.hpp"
 
 
 namespace {
@@ -65,11 +66,27 @@ public:
   ~Tester() { }
 
   void PinFiles() {
+    int error = 0;
+    Buffer* buff;
+    CacheHandle constantHandle; // a constantly pinned cache item
+    CacheHandle cacheHandles[8];
 
-  }
+    fileCache->pin("a.html", &buff, &error);
 
-  void UnpinFiles() {
+    for (int i = 0; i < 10; i++) {
+      cacheHandles[i] = fileCache->pin("a.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("b.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("c.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("1.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("2.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("3.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("4.html", &buff, &error);
+      cacheHandles[i] = fileCache->pin("5.html", &buff, &error);
 
+      for (int i = 1; i < 8; i++) {
+        fileCache->unpin(cacheHandles[i]);
+      }
+    }  
   }
 
 private:
@@ -126,6 +143,24 @@ TEST(Basic, Init) {
   EXPECT_EQ(file_cache.bytesUsed(), 0);
   EXPECT_EQ(file_cache.hits(), 0);
   EXPECT_EQ(file_cache.pins(), 0);
+  EXPECT_EQ(file_cache.failed(), 0);
+}
+
+TEST(Basic, FileRead) { // test we are actually returning the right file
+  int error = 0;
+  Buffer* buff;
+  FileCache file_cache(50 << 20); //50 megs
+
+  file_cache.pin("a.html", &buff, &error);
+  EXPECT_EQ(*(buff->readPtr()), 'x');
+
+  file_cache.pin("1.html", &buff, &error);
+  EXPECT_EQ(*(buff->readPtr()), '1');
+
+  //try loading a file that doesnt exist
+  file_cache.pin("12345.html", &buff, &error);
+  EXPECT_NEQ(error, 0);
+  EXPECT_EQ(file_cache.failed(), 1);
 }
 
 TEST(Statistics, Basic) {
@@ -253,13 +288,20 @@ TEST(MultipleActors, PinsAndUnpins) {
   Buffer* buff;
   CacheHandle handle;
   FileCache file_cache(50 << 20);
-  Tester tester(&fileCache);
+  Tester tester(&file_cache);
 
-  Callback<void>* pinCallback = 
-      new makeCallableOnce(&Tester::PinFiles, &tester);
+  Callback<void>* pinCallback = makeCallableMany(&Tester::PinFiles, &tester);
 
-  Callback<void>* unpinCallback = 
-      new makeCallableOnce(&Tester::PinFiles, &tester);
+  pthread_t pinThreadOne = makeThread(pinCallback);
+  pthread_t pinThreadTwo = makeThread(pinCallback);
+
+  pthread_join(pinThreadOne, NULL);
+  pthread_join(pinThreadTwo, NULL);
+
+  EXPECT_GT(file_cache.pins(), 1); // at least one file should be pinned
+  EXPECT_GT(file_cache.hits(), 19); // one file is constantly hit
+
+  delete pinCallback;
 }
 
 }  // unnamed namespace
