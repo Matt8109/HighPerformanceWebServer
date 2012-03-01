@@ -17,6 +17,7 @@
 #include "thread.hpp"
 #include "test_unit.hpp"
 
+
 namespace {
 
 using std::string;
@@ -26,8 +27,9 @@ using base::Buffer;
 using base::Callback;
 using base::FileCache;
 using base::LogMessage;
-using base::makeCallableOnce;
 using base::makeThread;
+using base::makeCallableOnce;
+using base::makeCallableMany;
 
 typedef FileCache::CacheHandle CacheHandle;
 
@@ -58,15 +60,20 @@ private:
 
 class Tester {
 public:
-  Tester() { }
+  Tester(FileCache* tempFileCache)
+      : fileCache(tempFileCache) { }
   ~Tester() { }
 
-  void AddPinFiles() {
+  void PinFiles() {
+
   }
 
   void UnpinFiles() {
 
   }
+
+private:
+  FileCache* fileCache;
 };
 
 void FileFixture::startUp() {
@@ -163,6 +170,7 @@ TEST(Statistics, CacheThrash) {
 
   EXPECT_EQ(file_cache.hits(), 0);
   EXPECT_EQ(file_cache.pins(), 0);
+  EXPECT_EQ(file_cache.bytesUsed(), 2500); //only b.html should still be there
 }
 
 TEST(Statistics, LargeCacheNoPurges) {
@@ -183,6 +191,7 @@ TEST(Statistics, LargeCacheNoPurges) {
 
   EXPECT_EQ(file_cache.hits(), 50); // 5 items, requested 11 times, first misses
   EXPECT_EQ(file_cache.pins(), 8);
+  EXPECT_EQ(file_cache.bytesUsed(), 20240);
 }
 
 TEST(Statistics, Unpinning) {
@@ -237,6 +246,20 @@ TEST(Statistics, FullFailToAdd) {
   // the two conditions when  the cache is full
   EXPECT_EQ(handle, 0);
   EXPECT_EQ(error, 0);
+}
+
+TEST(MultipleActors, PinsAndUnpins) {
+  int error = 0;
+  Buffer* buff;
+  CacheHandle handle;
+  FileCache file_cache(50 << 20);
+  Tester tester(&fileCache);
+
+  Callback<void>* pinCallback = 
+      new makeCallableOnce(&Tester::PinFiles, &tester);
+
+  Callback<void>* unpinCallback = 
+      new makeCallableOnce(&Tester::PinFiles, &tester);
 }
 
 }  // unnamed namespace
