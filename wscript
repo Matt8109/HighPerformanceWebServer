@@ -131,6 +131,14 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'test2.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'test2:'
+                    )                    
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'callback_test.cpp',
                       includes = '.. .',
                       uselib = '',
