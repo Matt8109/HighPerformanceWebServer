@@ -321,7 +321,7 @@ TEST(MultipleActors, PinsAndUnpinsSmallCache) {
 
   EXPECT_GT(file_cache.pins(), 1); // at least one file should be pinned
   EXPECT_GT(file_cache.hits(), 19); // one file is constantly hit
-  EXPECT_EQ(file_cache.bytesUsed(), 20240);
+  EXPECT_GT(10240, file_cache.bytesUsed()); // expect cache size less than max
 
   delete pinCallback;
 }
