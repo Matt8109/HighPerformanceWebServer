@@ -68,7 +68,6 @@ public:
   void PinFiles() {
     int error = 0;
     Buffer* buff;
-    CacheHandle constantHandle; // a constantly pinned cache item
     CacheHandle cacheHandles[8];
 
     fileCache->pin("a.html", &buff, &error);
@@ -152,13 +151,11 @@ TEST(Basic, FileRead) { // test we are actually returning the right file
   FileCache file_cache(50 << 20); //50 megs
 
   file_cache.pin("a.html", &buff, &error);
-  EXPECT_NEQ(buff, NULL);
 
   if (buff) //just stopping segv until code is done
     EXPECT_EQ(*(buff->readPtr()), 'x');
 
   file_cache.pin("1.html", &buff, &error);
-  EXPECT_NEQ(buff, NULL);
 
   if (buff)
    EXPECT_EQ(*(buff->readPtr()), '1');
@@ -290,9 +287,6 @@ TEST(Statistics, FullFailToAdd) {
 }
 
 TEST(MultipleActors, PinsAndUnpinsLargeCache) {
-  int error = 0;
-  Buffer* buff;
-  CacheHandle handle;
   FileCache file_cache(50 << 20);
   Tester tester(&file_cache);
 
@@ -312,9 +306,6 @@ TEST(MultipleActors, PinsAndUnpinsLargeCache) {
 }
 
 TEST(MultipleActors, PinsAndUnpinsSmallCache) {
-  int error = 0;
-  Buffer* buff;
-  CacheHandle handle;
   FileCache file_cache(10240);
   Tester tester(&file_cache);
 
