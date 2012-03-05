@@ -1,8 +1,13 @@
 #ifndef MCP_BASE_FILE_CACHE_HEADER
 #define MCP_BASE_FILE_CACHE_HEADER
 
+#include <cerrno>
+#include <fcntl.h>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <tr1/unordered_map>
+#include <unistd.h>
 
 #include "buffer.hpp"
 #include "lock.hpp"
@@ -12,6 +17,31 @@ namespace base {
 using std::string;
 using std::tr1::hash;
 using std::tr1::unordered_map;
+
+ struct Node {
+   const string file_name;
+   Buffer* buf;   // owned here
+   int pin_count; // current number of pins on the object
+ };
+
+ // A map from a file_name to its node. Because we want to save
+ // space, we use the file_name inside the Node as the key (as a
+ // string*) rather than to duplicate that (as a string).
+ struct HashStrPtr {
+   size_t operator()(const string* a) const {
+     hash<string> hasher;
+     return hasher(*a);
+   }
+ };
+
+ struct EqStrPtr {
+   bool operator()(const string* a, const string* b) const {
+     return *a == *b;
+   }
+ };
+
+ typedef unordered_map<const string*, Node*, HashStrPtr, EqStrPtr> CacheMap;
+
 
 // The FileCache maintains a map from file names to their contents,
 // stored as 'Buffer's. The sum of all Buffer's stored in the map
@@ -57,7 +87,7 @@ class FileCache {
 public:
   typedef const string* CacheHandle;
 
-  explicit FileCache(int max_size);
+  explicit FileCache(int max_size_temp);
   ~FileCache();
 
   CacheHandle pin(const string& file_name, Buffer** buf, int* error);
@@ -65,13 +95,20 @@ public:
 
   // accessors
 
-  int maxSize() const   { return 0; }
   int bytesUsed() const { return 0; }
-  int pins() const      { return 0; }
-  int hits() const      { return 0; }
   int failed() const    { return 0; }
+  int hits() const      { return hit_count; }
+  int maxSize() const   { return max_size; }
+  int pins() const      { return pin_count; }
 
 private:
+  int hit_count;
+  int max_size;
+  int pin_count;
+  RWMutex sync_root;
+  CacheMap cache_map;
+
+  int readFile(const string& file_name, Buffer** buff, int* error);
 
   // Non-copyable, non-assignable
   FileCache(FileCache&);
