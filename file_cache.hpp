@@ -22,6 +22,7 @@ using std::tr1::unordered_map;
    const string file_name;
    Buffer* buf;   // owned here
    int pin_count; // current number of pins on the object
+   int file_size;      // size of the object in bytes
  };
 
  // A map from a file_name to its node. Because we want to save
@@ -108,7 +109,8 @@ private:
   RWMutex sync_root;
   CacheMap cache_map;
 
-  int readFile(const string& file_name, Buffer** buff, int* error);
+  CacheHandle checkInCache(const string& file_name, Buffer** buf, int* error);
+  int readFile(const string& file_name, Buffer** buf, int* error);
 
   // Non-copyable, non-assignable
   FileCache(FileCache&);
