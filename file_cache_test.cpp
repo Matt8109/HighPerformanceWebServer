@@ -73,14 +73,15 @@ public:
     fileCache->pin("a.html", &buff, &error);
 
     for (int i = 0; i < 10; i++) {
-      cacheHandles[i] = fileCache->pin("a.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("b.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("c.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("1.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("2.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("3.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("4.html", &buff, &error);
-      cacheHandles[i] = fileCache->pin("5.html", &buff, &error);
+      int x = 0;
+      cacheHandles[x++] = fileCache->pin("a.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("b.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("c.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("1.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("2.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("3.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("4.html", &buff, &error);
+      cacheHandles[x++] = fileCache->pin("5.html", &buff, &error);
 
       for (int i = 1; i < 8; i++) {
         fileCache->unpin(cacheHandles[i]);
