@@ -96,7 +96,7 @@ public:
 
   // accessors
 
-  int bytesUsed() const { return 0; }
+  int bytesUsed() const { return bytes_used; }
   int failed() const    { return 0; }
   int hits() const      { return hit_count; }
   int maxSize() const   { return max_size; }
@@ -106,10 +106,16 @@ private:
   int hit_count;
   int max_size;
   int pin_count;
+  int bytes_used;
+  int failed_count;
   RWMutex sync_root;
   CacheMap cache_map;
 
-  CacheHandle checkInCache(const string& file_name, Buffer** buf, int* error);
+  CacheHandle checkInCache(const string& file_name, 
+                           Buffer** buf,
+                           Node* node, 
+                           int* error);
+  bool clearSpace(int space_needed);
   int readFile(const string& file_name, Buffer** buf, int* error);
 
   // Non-copyable, non-assignable
