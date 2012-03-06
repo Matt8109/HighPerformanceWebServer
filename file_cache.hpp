@@ -115,6 +115,7 @@ private:
                            Buffer** buf,
                            Node* node, 
                            int* error);
+  bool clearSpace(int space_needed);
   int readFile(const string& file_name, Buffer** buf, int* error);
 
   // Non-copyable, non-assignable

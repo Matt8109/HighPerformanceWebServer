@@ -21,7 +21,7 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
   CacheHandle h = checkInCache(file_name, buf, node, error);
 
   if (h) { // the file was in the cache
-    __sync_fetch_and_add(node->pin_count, 1);
+    __sync_fetch_and_add(&node->pin_count, 1);
     __sync_fetch_and_add(&hit_count, 1);
   }
   else {   // the file wasnt in the cache
@@ -40,7 +40,8 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
         __sync_fetch_and_add(node->pin_count, 1);
         __sync_fetch_and_add(&hit_count, 1);
       } else {
-          
+        // ok we need to add the new node
+
       }
     } else {
       failed++;
@@ -74,6 +75,14 @@ FileCache::CacheHandle FileCache::checkInCache(const string& file_name,
    return h;
   } else {
     return 0;             // no dice
+  }
+}
+
+bool FileCache::clearSpace(int space_needed); {
+  while (bytes_used + space_needed > max_size) {
+    for (CacheMap::iterator it = cache_map.iterator; it++) {
+      
+    }
   }
 }
 
