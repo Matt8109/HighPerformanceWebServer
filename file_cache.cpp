@@ -15,23 +15,37 @@ FileCache::~FileCache() {
 FileCache::CacheHandle FileCache::pin(const string& file_name,
                                       Buffer** buf,
                                       int* error) {
+  Node* node;
   sync_root.rLock();
 
-  CacheHandle h = checkInCache(file_name, buf, error);
+  CacheHandle h = checkInCache(file_name, buf, node, error);
 
-  if (!h) { // the file wasnt in the cache
+  if (h) { // the file was in the cache
+    __sync_fetch_and_add(node->pin_count, 1);
+    __sync_fetch_and_add(&hit_count, 1);
+  }
+  else {   // the file wasnt in the cache
     sync_root.unlock(); // give up the read lock
 
-    // try reading the file, dont need the lock yet
+    // try reading the file, dont want to grab a lock while waiting on the fs
     Node* node = new Node;
     node->file_size = readFile(file_name, buf, error);
 
-    sync_root.wLock();  // and get the write lock
+    sync_root.wLock(); 
 
-    if (!*error) {      // ok we read the file
-      if (checkInCache(file_name, buf, error)) {
-
+    if (!*error) {  
+      h = checkInCache(file_name, buf, error)
+      if (h) {
+        // someone added the file before we did
+        __sync_fetch_and_add(node->pin_count, 1);
+        __sync_fetch_and_add(&hit_count, 1);
+      } else {
+          
       }
+    } else {
+      failed++;
+      delete node;
+      delete buf;
     }
   }
 
@@ -46,19 +60,17 @@ void FileCache::unpin(CacheHandle h) {
 }
 
 FileCache::CacheHandle FileCache::checkInCache(const string& file_name, 
-                                    Buffer** buf, 
+                                    Buffer** buf,
+                                    Node* node, 
                                     int* error) {
   CacheHandle h = 0;
   CacheMap::iterator it = cache_map.find(&file_name);
 
  if (it != cache_map.end()) { // already in the cache
     h = it->first;
-    Node* node = it->second;
+    node = it->second;
     *buf = node->buf;
     *error = 0;
-
-   __sync_fetch_and_add(&hit_count, 1);
-
    return h;
   } else {
     return 0;             // no dice
