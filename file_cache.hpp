@@ -3,6 +3,7 @@
 
 #include <cerrno>
 #include <fcntl.h>
+#include <queue>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -14,6 +15,8 @@
 
 namespace base {
 
+using std::pair;
+using std::queue;
 using std::string;
 using std::tr1::hash;
 using std::tr1::unordered_map;
@@ -97,7 +100,7 @@ public:
   // accessors
 
   int bytesUsed() const { return bytes_used; }
-  int failed() const    { return 0; }
+  int failed() const    { return failed_count; }
   int hits() const      { return hit_count; }
   int maxSize() const   { return max_size; }
   int pins() const      { return pin_count; }
