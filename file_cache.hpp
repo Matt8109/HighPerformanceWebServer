@@ -21,12 +21,16 @@ using std::string;
 using std::tr1::hash;
 using std::tr1::unordered_map;
 
- struct Node {
-   const string file_name;
-   Buffer* buf;   // owned here
-   int pin_count; // current number of pins on the object
-   int file_size;      // size of the object in bytes
- };
+struct Node {
+public:
+  Node(const string temp_lfile_name) :
+      file_name{}
+
+  const string file_name;
+  Buffer* buf;   // owned here
+  int pin_count; // current number of pins on the object
+  int file_size;      // size of the object in bytes
+};
 
  // A map from a file_name to its node. Because we want to save
  // space, we use the file_name inside the Node as the key (as a

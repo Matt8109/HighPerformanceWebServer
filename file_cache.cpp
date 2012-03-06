@@ -43,9 +43,11 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
         __sync_fetch_and_add(&hit_count, 1);
       } else {
         // ok we need to add the new node
-        node = new Node;
+        node = new Node(file_name);
         node->file_size = file_size;
+        node->file_name = file_name;
 
+        cache_map.insert(CacheMap::value_type(&node->file_name, node));
       }
     } else {
       failed_count++;
