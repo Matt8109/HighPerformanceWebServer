@@ -4,8 +4,11 @@
 namespace base {
 
 FileCache::FileCache(int max_size_temp)
-    : max_size(max_size_temp) {
-}
+    : bytes_used(0),
+      failed_count(0),
+      hit_count(0),
+      max_size(max_size_temp),
+      pin_count(0) { }
 
 // REQUIRES: No ongoing pin. This code assumes no one is using the
 // cache anymore
@@ -15,10 +18,13 @@ FileCache::~FileCache() {
 FileCache::CacheHandle FileCache::pin(const string& file_name,
                                       Buffer** buf,
                                       int* error) {
-  Node* node;
+  Node* node = NULL;
+  Buffer* temp_buf;
+  __sync_fetch_and_add(&pin_count, 1);
+
   sync_root.rLock();
 
-  CacheHandle h = checkInCache(file_name, buf, node, error);
+  CacheHandle h = checkInCache(file_name, &temp_buf, &node, error);
 
   if (h) { // the file was in the cache
     __sync_fetch_and_add(&node->pin_count, 1);
@@ -29,54 +35,75 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
 
     // try reading the file, dont want to grab a lock while waiting on the fs
     int file_size;
-    Node* node;
+    Node* node = NULL;
 
-    file_size = readFile(file_name, buf, error);
+    file_size = readFile(file_name, &temp_buf, error);
 
     sync_root.wLock(); 
 
     if (!*error) {  
-      h = checkInCache(file_name, buf, node, error);
+      h = checkInCache(file_name, &temp_buf, &node, error);
       if (h) {
         // someone added the file before we did
         __sync_fetch_and_add(&node->pin_count, 1);
         __sync_fetch_and_add(&hit_count, 1);
-      } else {
-        // ok we need to add the new node
-        node = new Node(file_name);
-        node->file_size = file_size;
-        node->file_name = file_name;
+      } else { // ok we need to add the new node
+        if (clearSpace(file_size)) { // make sure we have enough free space
+          node = new Node(file_name);
+          node->file_size = file_size;
+          node->buf = temp_buf;
+          node->pin_count++;
 
-        cache_map.insert(CacheMap::value_type(&node->file_name, node));
+          cache_map.insert(CacheMap::value_type(&node->file_name, node));
+          bytes_used += node->file_size;
+
+          h = reinterpret_cast<CacheHandle>(&node->file_name);
+        } else {                      // out of space          
+          failed_count++;
+          delete temp_buf;            // delete the file we created
+        }
       }
     } else {
       failed_count++;
       delete node;
-      delete buf;
     }
   }
 
-   __sync_fetch_and_add(&pin_count, 1);
-
    sync_root.unlock();
+
+   Buffer* ret_buf = new Buffer;
+   ret_buf->copyFrom(temp_buf);
+   *buf = ret_buf;
 
   return h;
 }
 
 void FileCache::unpin(CacheHandle h) {
+  sync_root.wLock();
+
+  CacheMap::iterator it = cache_map.find(h);
+  if (it != cache_map.end()) {
+    h = it->first;
+    Node* node = it->second;
+
+    __sync_fetch_and_sub(&node->pin_count, 1);
+  }
+
+  sync_root.unlock();
+
 }
 
 FileCache::CacheHandle FileCache::checkInCache(const string& file_name, 
-                                    Buffer** buf,
-                                    Node* node, 
-                                    int* error) {
+                                              Buffer** buf,
+                                              Node** node, 
+                                              int* error) {
   CacheHandle h = 0;
   CacheMap::iterator it = cache_map.find(&file_name);
 
  if (it != cache_map.end()) { // already in the cache
     h = it->first;
-    node = it->second;
-    *buf = node->buf;
+    *node = it->second;
+    *buf = (*node)->buf;
     *error = 0;
    return h;
   } else {
@@ -160,7 +187,7 @@ int FileCache::readFile(const string& file_name, Buffer** buf, int* error) {
     new_buf->advance(stat_buf.st_size - to_read);
 
     if (!*error)
-      buf = &new_buf;  // set the buffer
+      *buf = new_buf;  // set the buffer
   }
 
   return file_size;

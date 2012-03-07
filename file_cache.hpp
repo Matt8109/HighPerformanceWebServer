@@ -23,8 +23,11 @@ using std::tr1::unordered_map;
 
 struct Node {
 public:
-  Node(const string temp_lfile_name) :
-      file_name{}
+  Node(const string& temp_file_name)
+      : file_name(temp_file_name),
+        pin_count(0),
+        file_size(0) { }
+  ~Node() {}
 
   const string file_name;
   Buffer* buf;   // owned here
@@ -110,17 +113,17 @@ public:
   int pins() const      { return pin_count; }
 
 private:
+  int bytes_used;
+  int failed_count;
   int hit_count;
   int max_size;
   int pin_count;
-  int bytes_used;
-  int failed_count;
   RWMutex sync_root;
   CacheMap cache_map;
 
   CacheHandle checkInCache(const string& file_name, 
                            Buffer** buf,
-                           Node* node, 
+                           Node** node, 
                            int* error);
   bool clearSpace(int space_needed);
   int readFile(const string& file_name, Buffer** buf, int* error);

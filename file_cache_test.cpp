@@ -84,7 +84,8 @@ public:
       cacheHandles[x++] = fileCache->pin("5.html", &buff, &error);
 
       for (int i = 1; i < 8; i++) {
-        fileCache->unpin(cacheHandles[i]);
+        if (cacheHandles[i] != NULL)          // only delete if it was added
+          fileCache->unpin(cacheHandles[i]);
       }
     }  
   }
@@ -153,13 +154,13 @@ TEST(Basic, FileRead) { // test we are actually returning the right file
 
   file_cache.pin("a.html", &buff, &error);
 
-  if (buff) //just stopping segv until code is done
-    EXPECT_EQ(*(buff->readPtr()), 'x');
+  string read_string(buff->readPtr(), buff->readSize());
+  EXPECT_EQ(read_string[0], 'x');
 
   file_cache.pin("1.html", &buff, &error);
 
-  if (buff)
-   EXPECT_EQ(*(buff->readPtr()), '1');
+  read_string = string(buff->readPtr(), buff->readSize());
+  EXPECT_EQ(read_string[0], '1');
 
   //try loading a file that doesnt exist
   file_cache.pin("12345.html", &buff, &error);
@@ -184,7 +185,7 @@ TEST(Statistics, Basic) {
   EXPECT_EQ(file_cache.maxSize(), 50 << 20);
   EXPECT_EQ(file_cache.bytesUsed(), 2500);
   EXPECT_EQ(file_cache.hits(), 1);
-  EXPECT_EQ(file_cache.pins(), 1);
+  EXPECT_EQ(file_cache.pins(), 2);
   EXPECT_EQ(error, 0); // will be non-zero if file was read
 }
 
@@ -208,7 +209,7 @@ TEST(Statistics, CacheThrash) {
   }
 
   EXPECT_EQ(file_cache.hits(), 0);
-  EXPECT_EQ(file_cache.pins(), 0);
+  EXPECT_EQ(file_cache.pins(), 30);
   EXPECT_EQ(file_cache.bytesUsed(), 2500); //only b.html should still be there
 }
 
@@ -228,8 +229,8 @@ TEST(Statistics, LargeCacheNoPurges) {
     file_cache.pin("5.html", &buff, &error);
   }
 
-  EXPECT_EQ(file_cache.hits(), 50); // 5 items, requested 11 times, first misses
-  EXPECT_EQ(file_cache.pins(), 8);
+  EXPECT_EQ(file_cache.hits(), 80); // 8 items, requested 11 times, first misses
+  EXPECT_EQ(file_cache.pins(), 88);
   EXPECT_EQ(file_cache.bytesUsed(), 20240);
 }
 
@@ -251,7 +252,7 @@ TEST(Statistics, Unpinning) {
   file_cache.pin("1.html", &buff, &error);
 
   EXPECT_EQ(file_cache.hits(), 3);
-  EXPECT_EQ(file_cache.pins(), 2);
+  EXPECT_EQ(file_cache.pins(), 6);
 }
 
 // makes sure we are puring unpinned items
@@ -270,7 +271,7 @@ TEST(Statistics, PurgeUnpinned) {
   file_cache.pin("a.html", &buff, &error);
 
   EXPECT_EQ(file_cache.hits(), 1);
-  EXPECT_EQ(file_cache.pins(), 2);
+  EXPECT_EQ(file_cache.pins(), 4);
 }
 
 TEST(Statistics, FullFailToAdd) {
@@ -299,7 +300,7 @@ TEST(MultipleActors, PinsAndUnpinsLargeCache) {
   pthread_join(pinThreadOne, NULL);
   pthread_join(pinThreadTwo, NULL);
 
-  EXPECT_GT(file_cache.pins(), 1); // at least one file should be pinned
+  EXPECT_EQ(file_cache.pins(), 162); // at least one file should be pinned
   EXPECT_GT(file_cache.hits(), 19); // one file is constantly hit
   EXPECT_EQ(file_cache.bytesUsed(), 20240);
 
@@ -320,13 +321,12 @@ TEST(MultipleActors, PinsAndUnpinsSmallCache) {
   pthread_join(pinThreadTwo, NULL);
   pthread_join(pinThreadThree, NULL);
 
-  EXPECT_GT(file_cache.pins(), 1); // at least one file should be pinned
+  EXPECT_EQ(file_cache.pins(), 243); // at least one file should be pinned
   EXPECT_GT(file_cache.hits(), 19); // one file is constantly hit
   EXPECT_GT(10240, file_cache.bytesUsed()); // expect cache size less than max
 
   delete pinCallback;
 }
-
 
 }  // unnamed namespace
 
