@@ -22,6 +22,12 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
   Buffer* temp_buf;
   __sync_fetch_and_add(&pin_count, 1);
 
+  // incase someone passes us a null for error ::cough:: ;)
+  if (!error) {
+    error = new int;
+    *error = 0;
+  }
+
   sync_root.rLock();
 
   CacheHandle h = checkInCache(file_name, &temp_buf, &node, error);
@@ -71,9 +77,13 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
 
    sync_root.unlock();
 
+   if (h != 0) { //only set buffers if we returned ok
    Buffer* ret_buf = new Buffer;
    ret_buf->copyFrom(temp_buf);
    *buf = ret_buf;
+  } else {
+    *buf = NULL;
+  }
 
   return h;
 }
@@ -86,7 +96,12 @@ void FileCache::unpin(CacheHandle h) {
     h = it->first;
     Node* node = it->second;
 
-    __sync_fetch_and_sub(&node->pin_count, 1);
+    if (node->pin_count != 0)
+     __sync_fetch_and_sub(&node->pin_count, 1);
+    else
+       LOG(LogMessage::FATAL) << "Attempted to unpin unpinned item.";
+  } else {
+    LOG(LogMessage::FATAL) << "Nonexistant cache handle.";
   }
 
   sync_root.unlock();
