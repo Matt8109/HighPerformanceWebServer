@@ -123,7 +123,7 @@ private:
 
   CacheHandle checkInCache(const string& file_name, 
                            Buffer** buf,
-                           Node* node, 
+                           Node** node, 
                            int* error);
   bool clearSpace(int space_needed);
   int readFile(const string& file_name, Buffer** buf, int* error);
