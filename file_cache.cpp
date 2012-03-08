@@ -94,7 +94,7 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
 }
 
 void FileCache::unpin(CacheHandle h) {
-  sync_root.wLock();
+  sync_root.rLock();
 
   CacheMap::iterator it = cache_map.find(h);
   if (it != cache_map.end()) {
