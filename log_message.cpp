@@ -9,9 +9,9 @@ bool MCP_BASE_has_fatal_message = false;
 
 namespace base {
 
-LogMessage::LogMessage(const char* file, const int line, Severity severity) 
+LogMessage::LogMessage(const char* file, const int line, Severity severity)
   : severity_(severity) {
-  char labels[MAX_SEVERITY] = { ' ', 'W' , 'E' };
+  char labels[MAX_SEVERITY] = { ' ', 'W', 'E', 'F' };
   msg_stream_ << labels[severity_] << " " << file << ":" << line << " ";
 }
 
