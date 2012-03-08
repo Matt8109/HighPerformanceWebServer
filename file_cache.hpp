@@ -25,7 +25,7 @@ struct Node {
 public:
   Node(const string& temp_file_name)
       : file_name(temp_file_name),
-        pin_count(0),
+        pin_count(1),
         file_size(0) { }
   ~Node() {}
 
