@@ -13,6 +13,12 @@ FileCache::FileCache(int max_size_temp)
 // REQUIRES: No ongoing pin. This code assumes no one is using the
 // cache anymore
 FileCache::~FileCache() {
+  for (CacheMap::iterator it = cache_map.begin(); 
+       it != cache_map.end(); 
+       it++) {
+    delete it->second->buf;
+    delete it->second;
+  }  
 }
 
 FileCache::CacheHandle FileCache::pin(const string& file_name,
@@ -20,53 +26,48 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
                                       int* error) {
   Node* node = NULL;
   Buffer* temp_buf;
-  __sync_fetch_and_add(&pin_count, 1);
+  int* error_num = new int;
+  *error_num =0;
 
-  // incase someone passes us a null for error ::cough:: ;)
-  if (!error) {
-    error = new int;
-    *error = 0;
-  }
+  __sync_fetch_and_add(&pin_count, 1);
 
   sync_root.rLock();
 
-  CacheHandle h = checkInCache(file_name, &temp_buf, &node, error);
+  CacheHandle h = checkInCache(file_name, &temp_buf, &node, error_num);
 
-  if (h) { // the file was in the cache
+  if (h) {
     __sync_fetch_and_add(&node->pin_count, 1);
     __sync_fetch_and_add(&hit_count, 1);
   }
-  else {   // the file wasnt in the cache
-    sync_root.unlock(); // give up the read lock
+  else { 
+    sync_root.unlock(); // dont hold the lock while waiting on fs
 
-    // try reading the file, dont want to grab a lock while waiting on the fs
     int file_size;
     Node* node = NULL;
 
-    file_size = readFile(file_name, &temp_buf, error);
+    file_size = readFile(file_name, &temp_buf, error_num);
 
     sync_root.wLock(); 
 
-    if (!*error) {  
-      h = checkInCache(file_name, &temp_buf, &node, error);
+    if (!*error_num) {  
+      h = checkInCache(file_name, &temp_buf, &node, error_num);
       if (h) {
         // someone added the file before we did
         __sync_fetch_and_add(&node->pin_count, 1);
         __sync_fetch_and_add(&hit_count, 1);
       } else { // ok we need to add the new node
-        if (clearSpace(file_size)) { // make sure we have enough free space
+        if (clearSpace(file_size)) {
           node = new Node(file_name);
           node->file_size = file_size;
           node->buf = temp_buf;
-          node->pin_count++;
 
           cache_map.insert(CacheMap::value_type(&node->file_name, node));
           bytes_used += node->file_size;
 
           h = reinterpret_cast<CacheHandle>(&node->file_name);
-        } else {                      // out of space          
+        } else {  // out of space          
           failed_count++;
-          delete temp_buf;            // delete the file we created
+          delete temp_buf;
         }
       }
     } else {
@@ -77,13 +78,17 @@ FileCache::CacheHandle FileCache::pin(const string& file_name,
 
    sync_root.unlock();
 
-   if (h != 0) { //only set buffers if we returned ok
-   Buffer* ret_buf = new Buffer;
-   ret_buf->copyFrom(temp_buf);
-   *buf = ret_buf;
+   if (h != 0) {
+     Buffer* ret_buf = new Buffer;
+     ret_buf->copyFrom(temp_buf);
+     *buf = ret_buf;
   } else {
     *buf = NULL;
   }
+
+  if (error)
+    *error = *error_num;
+  delete error_num;
 
   return h;
 }
@@ -115,14 +120,14 @@ FileCache::CacheHandle FileCache::checkInCache(const string& file_name,
   CacheHandle h = 0;
   CacheMap::iterator it = cache_map.find(&file_name);
 
- if (it != cache_map.end()) { // already in the cache
+ if (it != cache_map.end()) {
     h = it->first;
     *node = it->second;
     *buf = (*node)->buf;
     *error = 0;
-   return h;
+    return h;
   } else {
-    return 0;             // no dice
+    return 0;
   }
 }
 
@@ -152,14 +157,14 @@ bool FileCache::clearSpace(int space_needed) {
     cache_map.erase(pair.first);
     bytes_used -= pair.second->file_size;
 
-    delete pair.second->buf; // delete file bug
-    delete pair.second;      // delete the node itself
+    delete pair.second->buf; 
+    delete pair.second;
   }
 
   if (bytes_used + space_needed <= max_size)
-    return true;  // cleared out enough space
+    return true; 
   else
-    return false; // couldnt free the space
+    return false;
 }
 
 int FileCache::readFile(const string& file_name, Buffer** buf, int* error) {
