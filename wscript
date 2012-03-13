@@ -166,6 +166,14 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'false_sharing_benchmark.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'false_sharing_benchmark',
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'file_cache_test.cpp',
                       includes = '.. .',
                       uselib = '',
