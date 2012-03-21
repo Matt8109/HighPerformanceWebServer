@@ -23,6 +23,11 @@ public:
   void inc()         { ++count_; }
   void incBy(int i)  { count_ += i; }
 
+/*  void incByLoop(int i) {
+    for (int x = 0; x < i; x++)
+      count_++;
+  }*/
+
   bool between(int i, int j) {
     if (i > count_) return false;
     if (j < count_) return false;

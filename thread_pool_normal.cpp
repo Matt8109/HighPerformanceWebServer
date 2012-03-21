@@ -4,9 +4,9 @@ namespace base {
 
 ThreadPoolNormal::ThreadPoolNormal(int num_workers) 
     : status_(IS_RUNNING),
-		  stop_count_(0),
-		 	thread_count_(num_workers),
-			active_thread_count_(num_workers)	{
+	  stop_count_(0),
+	  thread_count_(num_workers),
+	  active_thread_count_(num_workers)	{
   thread_method_ = makeCallableMany(&ThreadPoolNormal::ThreadMethod, this);	
 	
 	for (int i = 0; i < thread_count_; i++)
@@ -21,7 +21,7 @@ void ThreadPoolNormal::stop() {
 	pthread_t current_thread_ = pthread_self();
 
 	struct timespec timeout;
-  timeout.tv_sec = 0;
+	timeout.tv_sec = 0;
 	timeout.tv_nsec = 300;
 
 	sync_root_.lock();
@@ -43,7 +43,7 @@ void ThreadPoolNormal::stop() {
 		return;
 	}
 
-  status_ = IS_STOPPING; // from now on no new tasks will be accepted
+  	status_ = IS_STOPPING; // from now on no new tasks will be accepted
 	sync_root_.unlock();
 
 	while (task_queue_.size() != 0)
