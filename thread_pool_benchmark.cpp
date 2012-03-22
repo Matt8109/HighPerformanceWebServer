@@ -32,61 +32,61 @@ void SlowTestLogic(int pool_size);
 
 template<typename PoolType>
 void FastConsumer() {
-	std::cout << "\nFast Consumer:\t";
+  std::cout << "\nFast Consumer:\t";
   std::cout << std::endl << "\t";
 
-	FastTestLogic<PoolType>(THREAD_COUNT_SM);
-	std::cout << " | ";
-	
-	FastTestLogic<PoolType>(THREAD_COUNT_MD);
-	std::cout << " | ";
+  FastTestLogic<PoolType>(THREAD_COUNT_SM);
+  std::cout << " | ";
+  
+  FastTestLogic<PoolType>(THREAD_COUNT_MD);
+  std::cout << " | ";
 
-	FastTestLogic<PoolType>(THREAD_COUNT_LG);
+  FastTestLogic<PoolType>(THREAD_COUNT_LG);
 
 }
 
 template<typename PoolType>
 void FastTestLogic(int pool_size) {
-	// Essentially this method will add a bunch of fast tasks to the
-	// thread pool, and will do busywork every so often based on the 
-	// number of threads in the pool to try to keep worker threads available
-	bool flip = false;
-	Timer timer;
+  // Essentially this method will add a bunch of fast tasks to the
+  // thread pool, and will do busywork every so often based on the 
+  // number of threads in the pool to try to keep worker threads available
+  bool flip = false;
+  Timer timer;
 
-	PoolType* thread_pool = new PoolType(pool_size);
+  PoolType* thread_pool = new PoolType(pool_size);
 
-	TestClass thread_test(thread_pool);
+  TestClass thread_test(thread_pool);
 
-	Callback<void>* increase_task = 
-		makeCallableMany(&TestClass::increase, &thread_test);
+  Callback<void>* increase_task = 
+    makeCallableMany(&TestClass::increase, &thread_test);
 
-	Callback<void>* hit_task =
-		makeCallableMany(&TestClass::hit, &thread_test);
+  Callback<void>* hit_task =
+    makeCallableMany(&TestClass::hit, &thread_test);
 
-	timer.start();
+  timer.start();
 
-	for (int i = 0; i < LOOP_COUNT; i++) {
-		if (i % pool_size == 0) { 
-			// slow down adding tasks every so often, keep pool "mostly" non full
-			for (int i = 0; i < TASK_ADD_SLOW_COUNT; i++)
-				flip=!flip;
-		}
+  for (int i = 0; i < LOOP_COUNT; i++) {
+    if (i % pool_size == 0) { 
+      // slow down adding tasks every so often, keep pool "mostly" non full
+      for (int i = 0; i < TASK_ADD_SLOW_COUNT; i++)
+        flip=!flip;
+    }
 
-		thread_pool->addTask(increase_task);
+    thread_pool->addTask(increase_task);
 
-		if (i % 10 == 0) // Every so often throw in a different task
-			thread_pool->addTask(hit_task);
-	}
+    if (i % 10 == 0) // Every so often throw in a different task
+      thread_pool->addTask(hit_task);
+  }
 
-	thread_pool->stop();
+  thread_pool->stop();
 
-	timer.end();
+  timer.end();
 
-	std::cout << timer.elapsed() << " with " << pool_size << " threads";
+  std::cout << timer.elapsed() << " with " << pool_size << " threads";
 
-	delete thread_pool;
-	delete increase_task;
-	delete hit_task;
+  delete thread_pool;
+  delete increase_task;
+  delete hit_task;
 }
 
 template<typename PoolType>
@@ -94,46 +94,46 @@ void SlowConsumer() {
   std::cout << "\nSlow Consumer:\t";
   std::cout << std::endl << "\t";
 
-	SlowTestLogic<PoolType>(THREAD_COUNT_SM);
-	std::cout << " | ";
+  SlowTestLogic<PoolType>(THREAD_COUNT_SM);
+  std::cout << " | ";
 
-	SlowTestLogic<PoolType>(THREAD_COUNT_MD);
-	std::cout << " | ";
+  SlowTestLogic<PoolType>(THREAD_COUNT_MD);
+  std::cout << " | ";
 
-	SlowTestLogic<PoolType>(THREAD_COUNT_LG);
+  SlowTestLogic<PoolType>(THREAD_COUNT_LG);
 }
 
 template<typename PoolType>
 void SlowTestLogic(int pool_size) {
-	// A slower benchmark test. The test driver never pauses while adding threads
-	// and the threads methods themselves have a built in slowdown that will cause
-	// a backlog of tasks to form in the thread pool.
-	Timer timer;
-	PoolType* thread_pool = new PoolType(pool_size);
+  // A slower benchmark test. The test driver never pauses while adding threads
+  // and the threads methods themselves have a built in slowdown that will cause
+  // a backlog of tasks to form in the thread pool.
+  Timer timer;
+  PoolType* thread_pool = new PoolType(pool_size);
 
-	TestClass thread_test(thread_pool);
+  TestClass thread_test(thread_pool);
 
-	Callback<void, int>* internal_cb = 
-		makeCallableMany(&TestClass::slowIncrease, &thread_test);
+  Callback<void, int>* internal_cb = 
+    makeCallableMany(&TestClass::slowIncrease, &thread_test);
 
-	Callback<void>* wrapper_cb = 
-		makeCallableMany(
-				&Callback<void, int>::operator(), internal_cb, TASK_SLOW_COUNT);
+  Callback<void>* wrapper_cb = 
+    makeCallableMany(
+        &Callback<void, int>::operator(), internal_cb, TASK_SLOW_COUNT);
 
-	timer.start();
+  timer.start();
 
-	for (int i = 0; i<LOOP_COUNT; i++)
-		thread_pool->addTask(wrapper_cb);
+  for (int i = 0; i<LOOP_COUNT; i++)
+    thread_pool->addTask(wrapper_cb);
 
-	thread_pool->stop();
+  thread_pool->stop();
 
-	timer.end();
+  timer.end();
 
-	std::cout << timer.elapsed() << " with " << pool_size << " threads";
+  std::cout << timer.elapsed() << " with " << pool_size << " threads";
 
-	delete thread_pool;
-	delete wrapper_cb;
-	delete internal_cb;
+  delete thread_pool;
+  delete wrapper_cb;
+  delete internal_cb;
 }
 
 }  // unnamed namespace
@@ -164,10 +164,10 @@ int main(int argc, char* argv[]) {
     usage(argc, argv);
     return -1;
   }
-	
-	std::cout << "\nThese take some time, please give them a moment.\n" 
-						<< "Even if the cursor stops blinking.\n\n"
-			      << std::flush;
+  
+  std::cout << "\nThese take some time, please give them a moment.\n" 
+            << "Even if the cursor stops blinking.\n\n"
+            << std::flush;
 
   // no queueing of tasks really
   if (all || num[0]) {
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
     SlowConsumer<ThreadPoolFast>();
   }
 
-	std::cout << "\n\n"; // Just to make the return to the cmd line nicer
+  std::cout << "\n\n"; // Just to make the return to the cmd line nicer
 
   return 0;
 }
