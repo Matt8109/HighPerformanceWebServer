@@ -61,7 +61,8 @@ Timer* LockTester(T lock,
                        loop_count,
                        work_count);
 
-  Callback<void>* cb_wrapper = makeCallableMany(&Callback<void>::operator(), cb);
+  Callback<void>* cb_wrapper = 
+      makeCallableMany(&Callback<void>::operator(), cb);
 
   timer->start();
 
@@ -85,40 +86,88 @@ Timer* LockTester(T lock,
 void printResults(string lock_one, 
                   string lock_two,
                   Timer* timer_one, 
-                  Timer* timer_two) {
+                  Timer* timer_two,
+                  Timer* timer_one_results,
+                  Timer* timer_two_results,
+                  int thread_count) {
   string winner;
   double total_time = timer_one->elapsed() + timer_two->elapsed();
-
   winner = timer_one->elapsed() < timer_two->elapsed() ? lock_one : lock_two;
 
-  std::cout << winner << " was faster." << std::endl;
-  
-  // show the percentage of time taken out of the total
-  std::cout << lock_one << " - " << timer_one->elapsed()
-            << "( " << (int)(timer_one->elapsed() / total_time * 100) << "% )"
-            << std::endl;
+  std::cout << std::endl << "\t" << thread_count << " thread(s)" << std::endl;
+  std::cout << "\t\t" << lock_one;
 
-  std::cout << lock_two << " - " << timer_two->elapsed()
-            << "( " << (int)(timer_two->elapsed() / total_time * 100) << "% )"
-            << std::endl;
+  if (winner == lock_one)
+    std::cout << "*";
+  
+  std::cout << " - " << timer_one->elapsed();
+
+  if (timer_one_results) 
+    std::cout << "(" << timer_one->elapsed() - timer_two_results->elapsed() 
+         << ")";
+  else
+    std::cout << "\t";
+
+  std::cout << "\t";
+
+  for (int i = 0; i < (int)(timer_one->elapsed() / total_time * 20); i++ )
+    std::cout << "|";
+
+  std::cout << std::endl;
+  std::cout << "\t\t" << lock_two;
+
+  if (winner == lock_two)
+    std::cout << "*";
+  
+  std::cout << " - " << timer_two->elapsed();
+
+  if (timer_two_results)
+    std::cout << "(" << timer_two->elapsed() - timer_two_results->elapsed() 
+         << ")";
+  else
+    std::cout << "\t";
+
+  std::cout << "\t";
+
+  for (int i = 0; i < (int)(timer_two->elapsed() / total_time * 20); i++ )
+    std::cout << "|";
 }
 
-void testStarter(int thread_count, int loop_count, int work_count) {
+void testStarter(int thread_count, 
+                 int loop_count,
+                 int work_count, 
+                 Timer** timer_one_results,
+                 Timer** timer_two_results) {
   Mutex* mutex = new Mutex();
   Spinlock* spinlock = new Spinlock();
   Timer* timer_one;
   Timer* timer_two;
 
-  timer_one = LockTester<Mutex*>(mutex, thread_count, loop_count, work_count);
+  timer_one = LockTester<Mutex*>(mutex, 
+                                 thread_count, 
+                                 loop_count, 
+                                 work_count);
+
   timer_two = LockTester<Spinlock*>(spinlock, 
                                     thread_count, 
                                     loop_count, 
                                     work_count);
 
-  printResults("Mutex", "Spinlock", timer_one, timer_two);
+  printResults("Mutex   ",
+               "Spinlock",
+               timer_one, 
+               timer_two,
+               *timer_one_results,
+               *timer_two_results, 
+               thread_count);
 
-  delete timer_one;
-  delete timer_two;
+  if (*timer_one_results)      // delete old results before we swap them out
+    delete *timer_one_results;
+  if (*timer_two_results)
+    delete *timer_two_results;
+
+  *timer_one_results = timer_one;
+  *timer_two_results = timer_two;
   delete mutex;
   delete spinlock;
 }
@@ -126,40 +175,49 @@ void testStarter(int thread_count, int loop_count, int work_count) {
 }
 
 int main(int argc, char* argv[]) {
-  std::cout << "2 Threads, 200k iterations, Small Method" << std::endl;
-  testStarter(2, 200000, 2);
+  Timer* timer_one = NULL;  // timer results
+  Timer* timer_two = NULL;
+  std::cout << "200k iterations, Small Cricital Section" << std::endl;
+  testStarter(2, 200000, 2, &timer_one, &timer_two);
+
+  std::cout << std::endl;
+  testStarter(4, 200000, 2, &timer_one, &timer_two);
+
+  std::cout << std::endl;
+  testStarter(8, 200000, 2, &timer_one, &timer_two);
+
+  delete timer_one;
+  delete timer_two;
+
+  timer_one = NULL;
+  timer_two = NULL;
 
   std::cout << std::endl << std::endl;
-  std::cout << "4 Threads, 200k iterations, Small Method" << std::endl;
-  testStarter(4, 200000, 2);
+  std::cout << "200k iterations, Medium Cricical Section" << std::endl;
+  testStarter(2, 200000, 200, &timer_one, &timer_two);
+
+  std::cout << std::endl;
+
+  testStarter(4, 200000, 200, &timer_one, &timer_two);
 
   std::cout << std::endl << std::endl;
-  std::cout << "8 Threads, 200k iterations, Small Method" << std::endl;
-  testStarter(8, 200000, 2);
+  testStarter(8, 200000, 200, &timer_one, &timer_two);
+
+  delete timer_one;
+  delete timer_two;
+
+  timer_one = NULL;
+  timer_two = NULL;
 
   std::cout << std::endl << std::endl;
-  std::cout << "2 Threads, 200k iterations, Medium Method" << std::endl;
-  testStarter(2, 200000, 200);
+  std::cout << "2k iterations, Large Cricital Section" << std::endl;
+  testStarter(32, 2000, 500, &timer_one, &timer_two);
 
   std::cout << std::endl << std::endl;
-  std::cout << "4 Threads, 200k iterations, Medium Method" << std::endl;
-  testStarter(4, 200000, 200);
+  testStarter(64, 2000, 500, &timer_one, &timer_two);
 
   std::cout << std::endl << std::endl;
-  std::cout << "8 Threads, 200k iterations, Medium Method" << std::endl;
-  testStarter(8, 200000, 200);
-
-  std::cout << std::endl << std::endl;
-  std::cout << "32 Threads, 2k iterations, Large Method" << std::endl;
-  testStarter(32, 2000, 500);
-
-  std::cout << std::endl << std::endl;
-  std::cout << "64 Threads, 2k iterations, Large Method" << std::endl;
-  testStarter(64, 2000, 500);
-
-  std::cout << std::endl << std::endl;
-  std::cout << "128 Threads, 2k iterations, Large Method" << std::endl;
-  testStarter(128, 2000, 500);
+  testStarter(128, 2000, 500, &timer_one, &timer_two);
 
   std::cout << std::endl << std::endl;
   std::cout << "In cases with a light to medium method size and thread \n"
