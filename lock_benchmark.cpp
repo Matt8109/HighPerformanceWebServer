@@ -177,7 +177,7 @@ void testStarter(int thread_count,
 int main(int argc, char* argv[]) {
   Timer* timer_one = NULL;  // timer results
   Timer* timer_two = NULL;
-  std::cout << "200k iterations, Small Cricital Section" << std::endl;
+  std::cout << "200k iterations, Small Critical Section" << std::endl;
   testStarter(2, 200000, 2, &timer_one, &timer_two);
 
   std::cout << std::endl;
@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
   timer_two = NULL;
 
   std::cout << std::endl << std::endl;
-  std::cout << "200k iterations, Medium Cricical Section" << std::endl;
+  std::cout << "200k iterations, Medium Critical Section" << std::endl;
   testStarter(2, 200000, 200, &timer_one, &timer_two);
 
   std::cout << std::endl;
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
   timer_two = NULL;
 
   std::cout << std::endl << std::endl;
-  std::cout << "2k iterations, Large Cricital Section" << std::endl;
+  std::cout << "2k iterations, Large Critical Section" << std::endl;
   testStarter(32, 2000, 500, &timer_one, &timer_two);
 
   std::cout << std::endl << std::endl;
@@ -220,9 +220,15 @@ int main(int argc, char* argv[]) {
   testStarter(128, 2000, 500, &timer_one, &timer_two);
 
   std::cout << std::endl << std::endl;
-  std::cout << "In cases with a light to medium method size and thread \n"
+  std::cout << "In cases with a light to medium method size and thread<=core \n"
             << "the spinlock is best. However when the number of threads\n"
             << "grows, along with the method time, blocking can be better\n"
             << "so as not to sap the CPU spinning when a real thread can run."
+            << "Also the deltas show the more threads/contention the worse time"
+            << "we generally get."
             << std::endl << std::endl;
+
+  std::cout << "Formatting:\n"
+            << "Type (* = winner) - Time taken (Change in time from last)\n"
+            << "Pipes = percentage of time taken between the two tests.\n\n";
 }

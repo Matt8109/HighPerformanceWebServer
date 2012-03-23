@@ -32,7 +32,7 @@ public:
     // If failed to grab lock, sleep.
     struct timespec t;
     t.tv_sec = 0;
-    t.tv_nsec = 5000000;
+    t.tv_nsec = 10000000;
     while (__sync_lock_test_and_set(&locked_, true)) {
       nanosleep(&t, NULL);
     }
