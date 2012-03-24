@@ -223,9 +223,9 @@ int main(int argc, char* argv[]) {
   std::cout << "In cases with a light to medium method size and thread<=core \n"
             << "the spinlock is best. However when the number of threads\n"
             << "grows, along with the method time, blocking can be better\n"
-            << "so as not to sap the CPU spinning when a real thread can run."
-            << "Also the deltas show the more threads/contention the worse time"
-            << "we generally get."
+            << "so as not to sap the CPU spinning when a real thread can run.\n"
+            << "Also the deltas show the more threads/contention the worse\n"
+            << "time we generally get."
             << std::endl << std::endl;
 
   std::cout << "Formatting:\n"
