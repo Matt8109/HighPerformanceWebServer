@@ -9,18 +9,22 @@
 namespace base {
 
 struct Node {
-  Node() : locked(true), next(NULL) {}
-
-  bool volatile locked;
+public:
+  bool locked;
+  Node* next;
   unsigned int thread_id;
-  Node* volatile next;
+
+  Node() : locked(true), next(NULL) {}
+ 
+  bool loadLockState() const volatile {
+    return locked;
+  }
 };
 
 class SpinlockMcs {
 public:
   SpinlockMcs()
-    : tail(NULL),
-      current(NULL) { }
+    : tail(NULL) { }
 
   void lock() {
     Node* previous;
@@ -28,41 +32,42 @@ public:
 
     temp->thread_id = (unsigned int)pthread_self();
 
-    // essentially atomic swap
     previous = __sync_lock_test_and_set(&tail, temp);
 
     if (previous != NULL) {
       previous->next = temp;
       
-      while (temp->locked);
+      while (temp->loadLockState());
     } else {
       temp->locked = false;
-      current = temp;
     }
   }
 
   void unlock() {
-    Node* temp = current;
-    //std::cout << "Unlock by" << (unsigned int)pthread_self() << std::endl;
+    Node* lock_holder = tail;
 
-    if (current->next == NULL) {
-       if(__sync_bool_compare_and_swap(&tail, current, NULL)) {
-          delete temp;
+    while (lock_holder->loadLockState()) {  // traverse the queue to find unlocked node
+      while (lock_holder->next == NULL);    // wait for list to become consistent 
+
+      lock_holder = lock_holder->next;
+    }
+
+    if (lock_holder->next == NULL) {
+       if(__sync_bool_compare_and_swap(&tail, lock_holder, NULL)) {
+          delete lock_holder;
           return;
        }
 
-       while (current->next == NULL);
+       while (lock_holder->next == NULL);
     }
 
-    current = current->next;
-    current->locked = false;
+    lock_holder->next->locked = false;
 
-    delete temp;
+    delete lock_holder;
   }
 
 private:
   Node* tail;
-  Node* current;
 
   // Non-copyable, non-assignable
   SpinlockMcs(SpinlockMcs&);

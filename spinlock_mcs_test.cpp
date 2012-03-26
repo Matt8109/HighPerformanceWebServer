@@ -1,7 +1,8 @@
 #include "callback.hpp"
+#include "logging.hpp"
 #include "spinlock_mcs.hpp"
-#include "thread.hpp"
 #include "test_unit.hpp"
+#include "thread.hpp"
 
 namespace {
 
