@@ -4,14 +4,16 @@
 #include <cstddef>
 #include <iostream>
 #include <pthread.h>
+#include <stdlib.h>
 
 namespace base {
 
 struct Node {
   Node() : locked(true), next(NULL) {}
 
-  bool locked;
-  Node* next;
+  bool volatile locked;
+  unsigned int thread_id;
+  Node* volatile next;
 };
 
 class SpinlockMcs {
@@ -24,11 +26,14 @@ public:
     Node* previous;
     Node* temp = new Node();
 
+    temp->thread_id = (unsigned int)pthread_self();
+
     // essentially atomic swap
     previous = __sync_lock_test_and_set(&tail, temp);
 
-    if (previous) {
+    if (previous != NULL) {
       previous->next = temp;
+      
       while (temp->locked);
     } else {
       temp->locked = false;
@@ -40,13 +45,13 @@ public:
     Node* temp = current;
     //std::cout << "Unlock by" << (unsigned int)pthread_self() << std::endl;
 
-    if (!current->next) {
+    if (current->next == NULL) {
        if(__sync_bool_compare_and_swap(&tail, current, NULL)) {
           delete temp;
           return;
        }
 
-       while (!current->next);
+       while (current->next == NULL);
     }
 
     current = current->next;
@@ -56,8 +61,8 @@ public:
   }
 
 private:
-  Node* tail;
-  Node* current;
+  Node* volatile tail;
+  Node* volatile current;
 
   // Non-copyable, non-assignable
   SpinlockMcs(SpinlockMcs&);
