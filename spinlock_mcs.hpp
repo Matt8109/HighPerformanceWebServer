@@ -61,8 +61,8 @@ public:
   }
 
 private:
-  Node* volatile tail;
-  Node* volatile current;
+  Node* tail;
+  Node* current;
 
   // Non-copyable, non-assignable
   SpinlockMcs(SpinlockMcs&);
