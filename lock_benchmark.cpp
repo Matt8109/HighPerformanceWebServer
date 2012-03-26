@@ -5,7 +5,7 @@
 
 #include "lock.hpp"
 #include "spinlock.hpp"
-#include "spinlock_queue.hpp"
+#include "spinlock_mcs.hpp"
 #include "test_util.hpp"
 #include "thread.hpp"
 #include "timer.hpp"
