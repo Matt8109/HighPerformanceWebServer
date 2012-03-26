@@ -49,7 +49,6 @@ public:
        while (!current->next);
     }
 
-
     current = current->next;
     current->locked = false;
 
@@ -57,7 +56,7 @@ public:
   }
 
 private:
-  Node* volatile tail;
+  Node* tail;
   Node* current;
 
   // Non-copyable, non-assignable
