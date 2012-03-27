@@ -11,7 +11,7 @@ namespace base {
 struct Node {
 public:
   bool locked;
-  Node* next;
+  Node* volatile next;
 
   Node() : locked(true), next(NULL) {}
  
@@ -27,7 +27,7 @@ public:
 
   ~SpinlockMcs() {}
 
-  void lock() {             // overload to match normal lock interface
+  void lock() {                 // overload to match normal lock interface
     if (qnode_ == NULL)
       qnode_ = new Node();
 
@@ -35,23 +35,20 @@ public:
   }
 
   void lock(Node** lock, Node* node) {
-   Node* previous;
+    Node* previous;
 
-   node->next = NULL;
+    node->next = NULL;
+    node->locked = true;        // possible data race if not here
 
-   previous = __sync_lock_test_and_set(&(*lock), node);
+    previous = __sync_lock_test_and_set(&(*lock), node);
 
-   if (previous != NULL) {
-    node->locked = true;
+    if (previous != NULL) {
+      previous->next = node;
 
-    __sync_synchronize();
-
-    previous->next = node;
-
-    while (node->loadLockState());
-   } else {
-    node->locked = false;
-   }
+      while (node->loadLockState());
+    } else {
+      node->locked = false;
+    }
   }
 
   void unlock() {                // overload to match normal lock interface
