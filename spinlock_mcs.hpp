@@ -25,9 +25,7 @@ public:
   SpinlockMcs()
     : tail_(NULL) { }
 
-  ~SpinlockMcs() {
-    delete qnode_;
-  }
+  ~SpinlockMcs() {}
 
   void lock() {             // overload to match normal lock interface
     if (qnode_ == NULL) {
