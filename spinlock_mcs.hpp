@@ -12,7 +12,6 @@ struct Node {
 public:
   bool locked;
   Node* next;
-  unsigned int thread_id;
 
   Node() : locked(true), next(NULL) {}
  
@@ -27,21 +26,24 @@ public:
     : tail_(NULL) { }
 
   void lock() {             // overload to match normal lock interface
-    if (qnode_ == NULL)
+    if (qnode_ == NULL) {
       qnode_ = new Node();
-  
+
+      std::cout << "Made new node" << std::endl;
+    }
+
     lock(qnode_);
   }
 
   void lock(Node* node) {
     Node* previous;
 
-    node->locked = true;
     node->next = NULL;
 
     previous = __sync_lock_test_and_set(&tail_, node);
 
     if (previous != NULL) {
+      node->locked = true;
       previous->next = node;
       
       while (node->loadLockState());
