@@ -36,15 +36,15 @@ public:
       std::cout << "Made new node" << std::endl;
     }
 
-    lock(qnode_);
+    lock(&tail_, qnode_);
   }
 
-  void lock(Node* node) {
+  void lock(Node** lock, Node* node) {
    Node* previous;
 
    node->next = NULL;
 
-   previous = __sync_lock_test_and_set(&tail_, node);
+   previous = __sync_lock_test_and_set(&(*lock), node);
 
    if (previous != NULL) {
     node->locked = true;
@@ -57,12 +57,12 @@ public:
   }
 
   void unlock() {                // overload to match normal lock interface
-    unlock(qnode_);
+    unlock(&tail_, qnode_);
   }
 
-  void unlock(Node* node) {
+  void unlock(Node** lock, Node* node) {
     if (node->next == NULL) {
-      if (__sync_bool_compare_and_swap(&tail_, node, NULL)) {
+      if (__sync_bool_compare_and_swap(&(*lock), node, NULL)) {
         return;
       }
 
