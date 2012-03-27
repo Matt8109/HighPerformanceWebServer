@@ -63,7 +63,7 @@ public:
       while (node->next == NULL);
     }
 
-    node->next->locked = false;l
+    node->next->locked = false;
   }
 
 private:
