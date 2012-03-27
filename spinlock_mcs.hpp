@@ -25,6 +25,10 @@ public:
   SpinlockMcs()
     : tail_(NULL) { }
 
+  ~SpinlockMcs() {
+    delete qnode_;
+  }
+
   void lock() {             // overload to match normal lock interface
     if (qnode_ == NULL) {
       qnode_ = new Node();
@@ -36,20 +40,20 @@ public:
   }
 
   void lock(Node* node) {
-    Node* previous;
+   Node* previous;
 
-    node->next = NULL;
+   node->next = NULL;
 
-    previous = __sync_lock_test_and_set(&tail_, node);
+   previous = __sync_lock_test_and_set(&tail_, node);
 
-    if (previous != NULL) {
-      node->locked = true;
-      previous->next = node;
-      
-      while (node->loadLockState());
-    } else {
-      node->locked = false;
-    }
+   if (previous != NULL) {
+    node->locked = true;
+    previous->next = node;
+
+    while (node->loadLockState());
+   } else {
+    node->locked = false;
+   }
   }
 
   void unlock() {                // overload to match normal lock interface
@@ -58,10 +62,11 @@ public:
 
   void unlock(Node* node) {
     if (node->next == NULL) {
-       if(__sync_bool_compare_and_swap(&tail_, node, NULL))
-          return;
+      if (__sync_bool_compare_and_swap(&tail_, node, NULL)) {
+        return;
+      }
 
-       while (node->next == NULL);
+      while (node->next == NULL);
     }
 
     node->next->locked = false;
