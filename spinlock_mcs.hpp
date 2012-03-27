@@ -24,55 +24,57 @@ public:
 class SpinlockMcs {
 public:
   SpinlockMcs()
-    : tail(NULL) { }
+    : tail_(NULL) { }
 
-  void lock() {
+  void lock() {             // overload to match normal lock interface
+    if (qnode_ == NULL)
+      qnode_ = new Node();
+  
+    lock(qnode_);
+  }
+
+  void lock(Node* node) {
     Node* previous;
-    Node* temp = new Node();
 
-    temp->thread_id = (unsigned int)pthread_self();
+    node->locked = true;
+    node->next = NULL;
 
-    previous = __sync_lock_test_and_set(&tail, temp);
+    previous = __sync_lock_test_and_set(&tail_, node);
 
     if (previous != NULL) {
-      previous->next = temp;
+      previous->next = node;
       
-      while (temp->loadLockState());
+      while (node->loadLockState());
     } else {
-      temp->locked = false;
+      node->locked = false;
     }
   }
 
-  void unlock() {
-    Node* lock_holder = tail;
+  void unlock() {                // overload to match normal lock interface
+    unlock(qnode_);
+  }
 
-    while (lock_holder->loadLockState()) {  // traverse the queue to find unlocked node
-      while (lock_holder->next == NULL);    // wait for list to become consistent 
-
-      lock_holder = lock_holder->next;
-    }
-
-    if (lock_holder->next == NULL) {
-       if(__sync_bool_compare_and_swap(&tail, lock_holder, NULL)) {
-          delete lock_holder;
+  void unlock(Node* node) {
+    if (node->next == NULL) {
+       if(__sync_bool_compare_and_swap(&tail_, node, NULL))
           return;
-       }
 
-       while (lock_holder->next == NULL);
+       while (node->next == NULL);
     }
 
-    lock_holder->next->locked = false;
-
-    delete lock_holder;
+    node->next->locked = false;
   }
 
 private:
-  Node* tail;
+  Node* tail_;
+  static __thread Node* qnode_;
 
   // Non-copyable, non-assignable
   SpinlockMcs(SpinlockMcs&);
   SpinlockMcs& operator=(SpinlockMcs&);
 }; 
+
+__thread Node* SpinlockMcs::qnode_;
 
 }
 
