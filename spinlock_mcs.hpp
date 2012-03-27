@@ -28,11 +28,8 @@ public:
   ~SpinlockMcs() {}
 
   void lock() {             // overload to match normal lock interface
-    if (qnode_ == NULL) {
+    if (qnode_ == NULL)
       qnode_ = new Node();
-
-      std::cout << "Made new node" << std::endl;
-    }
 
     lock(&tail_, qnode_);
   }
@@ -46,6 +43,9 @@ public:
 
    if (previous != NULL) {
     node->locked = true;
+
+    __sync_synchronize();
+
     previous->next = node;
 
     while (node->loadLockState());
@@ -60,9 +60,8 @@ public:
 
   void unlock(Node** lock, Node* node) {
     if (node->next == NULL) {
-      if (__sync_bool_compare_and_swap(&(*lock), node, NULL)) {
+      if (__sync_bool_compare_and_swap(&(*lock), node, NULL))
         return;
-      }
 
       while (node->next == NULL);
     }
