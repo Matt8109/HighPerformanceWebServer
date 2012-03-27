@@ -11,7 +11,7 @@ namespace base {
 struct Node {
 public:
   bool locked;
-  Node* next;
+  Node* volatile next;
 
   Node() : locked(true), next(NULL) {}
  
