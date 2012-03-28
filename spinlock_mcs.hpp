@@ -13,10 +13,14 @@ public:
   bool locked;
   Node* next;
 
-  Node() : locked(true), next(NULL) {}
+  Node() : locked(false), next(NULL) {}
  
   bool loadLockState() const volatile {
     return locked;
+  }
+
+  Node* loadNextState() const volatile {
+    return next;
   }
 };
 
@@ -34,20 +38,19 @@ public:
     lock(&tail_, qnode_);
   }
 
-  void lock(Node** lock, Node* node) {
+  void lock(Node** tail, Node* node) {
     Node* previous;
 
     node->next = NULL;
-    node->locked = true;        // possible data race if not here
 
-    previous = __sync_lock_test_and_set(&(*lock), node);
+
+    previous = __sync_lock_test_and_set(&(*tail), node);
 
     if (previous != NULL) {
+      node->locked = true;
       previous->next = node;
 
       while (node->loadLockState());
-    } else {
-      node->locked = false;
     }
   }
 
@@ -55,12 +58,12 @@ public:
     unlock(&tail_, qnode_);
   }
 
-  void unlock(Node** lock, Node* node) {
+  void unlock(Node** tail, Node* node) {
     if (node->next == NULL) {
-      if (__sync_bool_compare_and_swap(&(*lock), node, NULL))
+      if (__sync_bool_compare_and_swap(&(*tail), node, NULL))
         return;
 
-      while (node->next == NULL);
+      while (node->loadNextState() == NULL);
     }
 
     node->next->locked = false;
