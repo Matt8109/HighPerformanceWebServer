@@ -31,42 +31,35 @@ public:
 
   ~SpinlockMcs() {}
 
-  void lock() {                 // overload to match normal lock interface
-    if (qnode_ == NULL)
-      qnode_ = new Node();
-
-    lock(&tail_, qnode_);
-  }
-
-  void lock(Node** tail, Node* node) {
+  void lock() {
     Node* previous;
+    if (qnode_ == NULL)
+     qnode_ = new Node();
+    
+    qnode_->next = NULL;
 
-    node->next = NULL;
-
-
-    previous = __sync_lock_test_and_set(&(*tail), node);
+    previous = __sync_lock_test_and_set(&tail_, qnode_);
 
     if (previous != NULL) {
-      node->locked = true;
-      previous->next = node;
+      qnode_->locked = true;
 
-      while (node->loadLockState());
+      __sync_synchronize();
+
+      previous->next = qnode_;
+
+      while (qnode_->loadLockState());
     }
   }
 
-  void unlock() {                // overload to match normal lock interface
-    unlock(&tail_, qnode_);
-  }
-
-  void unlock(Node** tail, Node* node) {
-    if (node->next == NULL) {
-      if (__sync_bool_compare_and_swap(&(*tail), node, NULL))
+  void unlock() {
+    if (qnode_->next == NULL) {
+      if (__sync_bool_compare_and_swap(&tail_, qnode_, NULL))
         return;
 
-      while (node->loadNextState() == NULL);
+      while (qnode_->loadNextState() == NULL);
     }
 
-    node->next->locked = false;
+    qnode_->next->locked = false;
   }
 
 private:

@@ -57,6 +57,9 @@ void LockTester::test(int increments) {
     ++(*counter_);
     ++requests_;
     spin_->unlock();
+
+    if (requests_ % 1000 == 0)
+      std::cout << requests_ << " " << std::flush;
   }
 }
 
