@@ -114,6 +114,19 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ http_connection.cpp
+                                   http_parser.cpp
+                                   http_request.cpp
+                                   http_service.cpp
+                               """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      uselib_local = 'net_server concurrency',
+                      target = 'http_server',
+                      name = 'http_server'
+                    )
+
+    bld.new_task_gen( features = 'cxx cstaticlib',
                       source = """ circular_buffer.cpp
                                    list_set.cpp
                                """,
@@ -204,6 +217,15 @@ def build(bld):
                       uselib = '',
                       uselib_local = 'concurrency',
                       target = 'file_cache_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'http_parser_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'http_server concurrency',
+                      target = 'http_parser_test',
                       unit_test = 1
                     )
 
