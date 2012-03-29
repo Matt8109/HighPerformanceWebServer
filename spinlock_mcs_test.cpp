@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "callback.hpp"
 #include "logging.hpp"
 #include "spinlock_mcs.hpp"
@@ -10,6 +12,8 @@ using base::Callback;
 using base::makeCallableOnce;
 using base::makeThread;
 using base::SpinlockMcs;
+
+const int CORE_COUNT = sysconf( _SC_NPROCESSORS_ONLN );
 
 // ************************************************************
 // Support for concurrent test
@@ -57,9 +61,6 @@ void LockTester::test(int increments) {
     ++(*counter_);
     ++requests_;
     spin_->unlock();
-
-    if (requests_ % 1000 == 0)
-      std::cout << requests_ << " " << std::flush;
   }
 }
 
@@ -80,8 +81,8 @@ TEST(Concurrency, counters) {
   SpinlockMcs spin;
   int counter = 0;
 
-  const int threads = 16;
-  const int incs = 5000;
+  const int threads = CORE_COUNT;
+  const int incs = 500000;
   LockTester* testers[threads];
 
   for (int i = 0; i < threads; i++) {

@@ -42,9 +42,6 @@ public:
 
     if (previous != NULL) {
       qnode_->locked = true;
-
-      __sync_synchronize();
-
       previous->next = qnode_;
 
       while (qnode_->loadLockState());
