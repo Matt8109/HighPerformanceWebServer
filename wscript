@@ -139,6 +139,14 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'lock_fairness_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'lock_fairness_test'
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'test2.cpp',
                       includes = '.. .',
                       uselib = '',
