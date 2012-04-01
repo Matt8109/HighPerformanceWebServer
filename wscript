@@ -312,8 +312,16 @@ def build(bld):
     # Binaries
     #
 
-
-    # empty, for now
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'server.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = """ http_server
+                                         net_server
+                                         concurrency
+                                     """,
+                      target = 'server'
+                    )
 
     #
     # Build debug variant, if --debug was set
