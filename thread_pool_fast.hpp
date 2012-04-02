@@ -1,58 +1,56 @@
 #ifndef MCP_BASE_THREAD_POOL_FAST_HEADER
 #define MCP_BASE_THREAD_POOL_FAST_HEADER
 
-#define IS_RUNNING 0
-#define IS_STOPPING 1
-#define IS_STOPPED 2
-
-#include <time.h>
+#include <list>
+#include <queue>
 #include <vector>
-#include <errno.h>
-#include <unistd.h>
-#include <pthread.h>
 
-#include "lock.hpp"
 #include "callback.hpp"
+#include "lock.hpp"
 #include "thread_pool.hpp"
+#include "thread_local.hpp"
 
 namespace base {
-using base::Mutex;
-using base::SafeQueue;
+
+using std::list;
+using std::queue;
 using std::vector;
 
 class ThreadPoolFast : public ThreadPool {
 public:
-  // ThreadPoolFast interface
+
+  // ThreadPool interface
   explicit ThreadPoolFast(int num_workers);
   virtual ~ThreadPoolFast();
 
   virtual void addTask(Callback<void>* task);
   virtual void stop();
   virtual int count() const;
-	virtual bool isStopped();
+
+  // Returns the worker ID the call is being issued from. The call
+  // must be issued from a worker thread.
+  static int ME();
 
 private:
+  class Worker;
+
+  typedef queue<Callback<void>*> DispatchQueue;
+  typedef list<Worker*>          WorkerList;
+  typedef vector<pthread_t>      TIDs;
+
+  mutable Mutex                  m_dispatch_;
+  ConditionVar                   cv_not_empty_;
+  DispatchQueue                  dispatch_queue_;
+  WorkerList                     workers_;
+  TIDs                           workers_tids_;
+
+  static ThreadLocal<int>        worker_num_;
+
+  void queueWorker(Worker* worker);
+
   // Non-copyable, non-assignable.
   ThreadPoolFast(const ThreadPoolFast&);
   ThreadPoolFast& operator=(const ThreadPoolFast&);
-
-	void ThreadMethod();
-
-	int status_; //the status of the pool, IS_RUNNING, IS_STOPPING, IS_STOPPED
-	int stop_count_; // the number of threads waiting on a stop
-	int thread_count_; //the number of threads in the thread pool
-	int active_thread_count_; // number of thread currently running
-	int free_thread_count_; //the number of free threads
-	Mutex sync_root_; // for syn
-	ConditionVar not_empty_; //for waking up threads
-	vector<pthread_t> thread_list_; // holds the collection of threads in the pool
-	Callback<void>* thread_method_; // the callback for the the method that runs tasks
-	mutable queue<Callback<void>*> task_queue_; // the queue of tasks to be completed
-
-	// for fast communication avoiding the queue
-	Callback<void>* pending_task_;
-	Mutex fast_sync_root_;
-	ConditionVar no_fast_task_;
 };
 
 } // namespace base

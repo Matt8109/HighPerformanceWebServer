@@ -1,5 +1,5 @@
-#ifndef DISTRIB_BASE_SPINLOCK_HEADER
-#define DISTRIB_BASE_SPINLOCK_HEADER
+#ifndef MCP_BASE_SPINLOCK_HEADER
+#define MCP_BASE_SPINLOCK_HEADER
 
 #include <ctime>
 
@@ -55,8 +55,8 @@ private:
   // Non-copyable, non-assignable
   Spinlock(Spinlock&);
   Spinlock& operator=(Spinlock&);
-}; 
+};
 
 }  // namespace base
 
-#endif  //  DISTRIB_BASE_SPINLOCK_HEADER
+#endif  //  MCP_BASE_SPINLOCK_HEADER

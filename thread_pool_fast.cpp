@@ -1,179 +1,181 @@
+#include <cstdlib>
+#include <sys/time.h>  // gettimeofday
+
+#include "callback.hpp"
+#include "logging.hpp"
+#include "thread.hpp"
+
 #include "thread_pool_fast.hpp"
 
 namespace base {
 
-ThreadPoolFast::ThreadPoolFast(int num_workers) 
-    : status_(IS_RUNNING),
-		  stop_count_(0),
-		 	thread_count_(num_workers),
-			active_thread_count_(num_workers),
-			free_thread_count_(num_workers),
-			pending_task_(NULL)	{
-  thread_method_ = makeCallableMany(&ThreadPoolFast::ThreadMethod, this);	
-	
-	for (int i = 0; i < thread_count_; i++)
-	  thread_list_.push_back(makeThread(thread_method_));
+using base::Callback;
+using base::makeCallableOnce;
+
+static __thread bool last_worker_ = false;
+
+ThreadLocal<int> ThreadPoolFast::worker_num_;
+
+//
+// Internal Worker Class
+//
+
+class ThreadPoolFast::Worker {
+public:
+  Worker(ThreadPoolFast*);
+  ~Worker();
+
+  void workerLoop(int instance);
+  void assignTask(Callback<void>* task);
+
+private:
+  ThreadPoolFast* my_pool_;        // not owned here
+
+  Mutex           m_;
+  ConditionVar    cv_has_task_;
+  bool            has_task_;
+  Callback<void>* task_;
+
+};
+
+ThreadPoolFast::Worker::Worker(ThreadPoolFast* pool)
+  : my_pool_(pool),
+    has_task_(false),
+    task_(NULL) {
+}
+
+ThreadPoolFast::Worker::~Worker() {
+}
+
+void ThreadPoolFast::Worker::workerLoop(int instance) {
+  worker_num_.setVal(instance);
+
+  while (true) {
+
+    // Wait until I know my task. Because a task is assigned to this
+    // worker, we assume it left the free worker's pool.
+    {
+      ScopedLock l(&m_);
+
+      while (!has_task_) {
+        cv_has_task_.wait(&m_);
+      }
+      has_task_ = false;
+    }
+
+    // A NULL task is considered a request to stop this worker.
+    if (task_ == NULL) {
+      delete this;
+      break;
+    }
+
+    // If this worker is executing the ThreadPool tear down,
+    // i.e. stop(), the latter will notify this thread is the last
+    // worker, after waiting for all other worker threads to join.
+
+    (*task_)();  // would self-delete if once-run task
+
+    if (last_worker_) {
+      delete this;
+      break;
+    }
+
+    // Return the worker to the free worker's pool
+    my_pool_->queueWorker(this);
+  }
+}
+
+void ThreadPoolFast::Worker::assignTask(Callback<void>* task) {
+  ScopedLock l(&m_);
+
+  task_ = task;
+  has_task_ = true;
+  cv_has_task_.signal();
+}
+
+//
+//  ThreadPoolFast Definitions
+//
+
+ThreadPoolFast::ThreadPoolFast(int num_workers) {
+  for (int i = 0; i < num_workers; i++) {
+    Worker* worker = new Worker(this);
+    Callback<void>* body = makeCallableOnce(&Worker::workerLoop, worker, i);
+    workers_tids_.push_back(makeThread(body));
+    queueWorker(worker);
+  }
 }
 
 ThreadPoolFast::~ThreadPoolFast() {
-	delete thread_method_;
+  m_dispatch_.lock();
+  while (! dispatch_queue_.empty()) {
+    Callback<void>* task = dispatch_queue_.front();
+    dispatch_queue_.pop();
+    if (task && task->once()) {
+      delete task;
+    }
+  }
+  m_dispatch_.unlock();
 }
 
 void ThreadPoolFast::stop() {
-	pthread_t current_thread_ = pthread_self();
+  // Issue a stop request callback for each worker thread. If the
+  // stop() is being issued from one of the workers itself, one of the
+  // stop callbacks won't be consummed. The destructor would dispose
+  // of it.
+  for (size_t i = 0; i < workers_tids_.size(); i++) {
+    addTask(NULL);
+  }
 
-	struct timespec timeout;
-  timeout.tv_sec = 0;
-	timeout.tv_nsec = 300;
+  bool exit_last_worker = false;
+  const size_t num_workers = workers_tids_.size();
+  for (size_t i = 0; i < num_workers; ++i) {
+    if (pthread_self() == workers_tids_[i]) {
+      exit_last_worker = true;
+    } else {
+      pthread_join(workers_tids_[i], NULL);
+    }
+  }
 
-	sync_root_.lock();
-	// check to see if we are actually a thread in the pool
-	for (int i = 0; i < thread_count_; i++) {
-		if (thread_list_[i] == current_thread_) 
-			stop_count_++;	// let others know we are waiting if a pool thread
-	}
+  if (exit_last_worker) {
+    last_worker_ = true;
+  }
+}
 
-	if (status_ == IS_STOPPING) { // someone has already called stop
-		//now we have to wait for the other thread to finish shutting down the pool
-		while (status_ != IS_STOPPED)
-	  	not_empty_.timedWait(&sync_root_, &timeout);		
+void ThreadPoolFast::queueWorker(Worker* worker) {
+  ScopedLock l(&m_dispatch_);
 
-		// ok the other thread has finished stopping the pool, we can exit
-		stop_count_--; // not needed, but might help debug
-
-		sync_root_.unlock();
-		return;
-	}
-
-  status_ = IS_STOPPING;      // from now on no new tasks will be accepted
-
-	fast_sync_root_.lock();     // wake sleeping threads
-	no_fast_task_.signalAll();
-	fast_sync_root_.unlock();
-
-	sync_root_.unlock();
-
-	while (task_queue_.size() != 0)
-		usleep(50000); // 50 ms
-
-	// try to join on all threads
-	for (int i = 0; i < thread_count_; i++)
-		pthread_tryjoin_np(thread_list_[i], NULL);
-
-	sync_root_.lock();
-	
-	// wait until all threads not calling stop have completed
-	while (active_thread_count_ >  stop_count_)
-		not_empty_.timedWait(&sync_root_, &timeout);		
-
-	status_ = IS_STOPPED;
-	sync_root_.unlock();	
+  // If there are tasks waiting, pick the worker right away; don't
+  // bother putting it back in the pool.
+  if (! dispatch_queue_.empty()) {
+    worker->assignTask(dispatch_queue_.front());
+    dispatch_queue_.pop();
+  } else {
+    workers_.push_front(worker);
+  }
 }
 
 void ThreadPoolFast::addTask(Callback<void>* task) {
-	if (status_ == IS_RUNNING) { // the pool is still running
-		sync_root_.lock(); //making internal changes
+  ScopedLock l(&m_dispatch_);
 
-		// fast thread pool change, essentially dump the task in a shared var
-		// and alert a free thread to pick it up
-		fast_sync_root_.lock();
+  if (! workers_.empty()) {
+    Worker* worker = workers_.front();
+    workers_.pop_front();
+    worker->assignTask(task);
+    return;
+  }
 
-		if (free_thread_count_ != 0) {
-			
-			while (pending_task_ != NULL)
-				no_fast_task_.wait(&fast_sync_root_); // wait until pending task is empty
-
-			pending_task_ = task;
-
-			fast_sync_root_.unlock();
-			sync_root_.unlock();
-			no_fast_task_.signal();
-
-			return;
-		} else { // we need to queue
-			fast_sync_root_.unlock();
-		}
-
-		task_queue_.push(task); // queue the task as we would before
-
-		not_empty_.signal(); // alert the threads
-		sync_root_.unlock();
-
-	}
+  dispatch_queue_.push(task);
 }
 
 int ThreadPoolFast::count() const {
-	return task_queue_.size();
+  ScopedLock l(&m_dispatch_);
+  return dispatch_queue_.size();
 }
 
-bool ThreadPoolFast::isStopped() {
-		return status_ == IS_STOPPED ? true : false;
-}
-
-void ThreadPoolFast::ThreadMethod() {
-	Callback<void>* cb;
-  struct timespec timeout;
-  timeout.tv_sec = 0;
-	timeout.tv_nsec = 300;
-
-	while (true) {
-		
-		fast_sync_root_.lock();
-
-		while (pending_task_ == NULL && status_ == IS_RUNNING 
-				&& task_queue_.size() == 0)
-			no_fast_task_.timedWait(&fast_sync_root_, &timeout);
-
-			free_thread_count_--;       // mark ourself as being active
-
-		if (pending_task_ != NULL) {
-			cb = pending_task_;         // grab the task
-			pending_task_ = NULL;       // clear the task for someone else
-			no_fast_task_.signalAll();
-			fast_sync_root_.unlock();   // give someone else the shot
-
-			(*cb)();                    // execute the callback
-		} else {
-			fast_sync_root_.unlock();   // so we can grab again in correct order
-		}
-
-		// obtain the locks in specifc order to prevent deadlock
-		sync_root_.lock();
-		fast_sync_root_.lock();
-
-		// we are stopping
-		if (status_ != IS_RUNNING && task_queue_.size() == 0) {
-				active_thread_count_--;
-				fast_sync_root_.unlock();
-				sync_root_.unlock();
-
-				return;
-    }
-
-		fast_sync_root_.unlock();
-		sync_root_.unlock();
-		
-		//if we got here, means there is probabally something in the queue
-		while (true) {
-			sync_root_.lock();
-
-			if (task_queue_.size() != 0) { // we have something to do
-						cb = task_queue_.front();
-						task_queue_.pop();
-
-						sync_root_.unlock();
-
-						(*cb)();
-			} else { // the queue is empty, go to sleep
-				fast_sync_root_.lock();
-				free_thread_count_++;
-				fast_sync_root_.unlock();
-				sync_root_.unlock();
-
-				break;
-			}
-		}
-	}
+/*static*/
+int ThreadPoolFast::ME() {
+  return worker_num_.getVal();
 }
 
 } // namespace base
