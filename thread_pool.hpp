@@ -1,9 +1,17 @@
 #ifndef MCP_BASE_THREAD_POOL_HEADER
 #define MCP_BASE_THREAD_POOL_HEADER
 
+#include <pthread.h>
+
+#include "lock.hpp"
+#include "thread.hpp"
 #include "callback.hpp"
+#include "safe_queue.hpp"
 
 namespace base {
+
+using base::makeThread;
+using base::makeCallableMany;
 
 // Abstract base class for experimenting with thread-pool strategies.
 class ThreadPool {

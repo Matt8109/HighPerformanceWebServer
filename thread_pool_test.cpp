@@ -86,7 +86,7 @@ TEST(SingleTaskSingleExecution, ExternalTaskStop) {
 }
 
 TEST(SingleTaskMultipleExecution, InternalTaskStop) {
-	ThreadPool* thread_pool = new ThreadPoolNormal(CORE_COUNT);
+	ThreadPoolNormal* thread_pool = new ThreadPoolNormal(CORE_COUNT);
 
 	TestClass test_thread(thread_pool);
 
