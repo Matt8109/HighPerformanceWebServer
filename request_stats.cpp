@@ -2,7 +2,9 @@
 
 namespace base {
 
-RequestStats::RequestStats(int num_threads) {
+RequestStats::RequestStats(int num_threads)
+    : num_threads_(num_threads),
+      ticks_per_slot_(TicksClock::ticksPerSecond() / SLOTS) {
 }
 
 RequestStats::~RequestStats() {

@@ -1,6 +1,8 @@
 #ifndef MCP_REQUEST_STATS_HEADER
 #define MCP_REQUEST_STATS_HEADER
 
+#define SLOTS 1000000
+
 #include <inttypes.h>
 #include <string>
 
@@ -43,9 +45,11 @@ public:
 
   // Accessors (for testing)
 
-  uint64_t ticksPerSlot() const { return 0; }
+  uint64_t ticksPerSlot() const { return ticks_per_slot_; }
 
 private:
+  int const num_threads_;
+  uint64_t const ticks_per_slot_;
 
   // Non-copyable, non-assignable
   RequestStats(const RequestStats&);
