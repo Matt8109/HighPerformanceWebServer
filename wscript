@@ -98,6 +98,35 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ acceptor.cpp
+                                   connection.cpp
+                                   descriptor_poller_epoll.cpp
+                                   io_manager.cpp
+                                   io_service.cpp
+                                   request_stats.cpp
+                                   ticks_clock.cpp
+                                """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      uselib_local = 'concurrency',
+                      target = 'net_server',
+                      name = 'net_server'
+                    )
+
+    bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ http_connection.cpp
+                                   http_parser.cpp
+                                   http_request.cpp
+                                   http_service.cpp
+                               """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      uselib_local = 'net_server concurrency',
+                      target = 'http_server',
+                      name = 'http_server'
+                    )
+
+    bld.new_task_gen( features = 'cxx cstaticlib',
                       source = """ circular_buffer.cpp
                                    list_set.cpp
                                """,
@@ -139,6 +168,14 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'lock_fairness_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'lock_fairness_test'
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'test2.cpp',
                       includes = '.. .',
                       uselib = '',
@@ -173,6 +210,15 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'connection_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'net_server',
+                      target = 'connection_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'demo_test.cpp',
                       includes = '.. .',
                       uselib = '',
@@ -199,6 +245,15 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'http_parser_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'http_server concurrency',
+                      target = 'http_parser_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'list_set_test.cpp',
                       includes = '.. .',
                       uselib = '',
@@ -216,6 +271,14 @@ def build(bld):
                       unit_test = 1
                     )
 
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'request_stats_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'net_server',
+                      target = 'request_stats_test',
+                      unit_test = 1
+                    )
     bld.new_task_gen( features = 'cxx cprogram',
                       source = 'signal_handler_test.cpp',
                       includes = '.. .',
@@ -278,21 +341,20 @@ def build(bld):
                       unit_test = 1
                     )
 
-    bld.new_task_gen( features = 'cxx cprogram',
-                      source = 'thread_pool_test_fast.cpp',
-                      includes = '.. .',
-                      uselib = '',
-                      uselib_local = 'concurrency',
-                      target = 'thread_pool_test_fast',
-                      unit_test = 1
-                    )
-
     #****************************************
     # Binaries
     #
 
-
-    # empty, for now
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'server.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = """ http_server
+                                         net_server
+                                         concurrency
+                                     """,
+                      target = 'server'
+                    )
 
     #
     # Build debug variant, if --debug was set

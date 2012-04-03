@@ -1,8 +1,7 @@
 #include <iostream>
-#include <math.h>
 #include <pthread.h>
-#include <queue>
 #include <string>
+#include <queue>
 
 #include "lock.hpp"
 #include "spinlock.hpp"
@@ -11,98 +10,43 @@
 #include "thread.hpp"
 #include "timer.hpp"
 
+using base::Mutex;
+using base::Spinlock;
+using base::Timer;
+
+namespace {
+
 using base::Callback;
 using base::makeCallableMany;
 using base::makeThread;
-using base::Mutex;
-using base::Spinlock;
 using base::Timer;
 using std::queue;
 using std::string;
 using test::Counter;
-
-namespace {
+using base::Mutex;
+using base::Spinlock;
 
 struct Tester {
-public:
-  queue<double> thread_timer_results;
-
   template<typename T>
   void busyTestMethod(T lock, int loop_count, int work_count) {
-    queue<double> timers;   // keep track of all lock acquisition times
-    Timer timer;            // the current timer
     Counter counter;
 
     for (int i = 0; i < loop_count; i++) {
-      timer.reset();
-      timer.start();
-
       lock->lock();
-
-      timer.end();
 
       for (int j = 0; j < work_count; j++)
         counter.inc();
 
       lock->unlock();
-
-      timers.push(timer.elapsed());
     }
-
-    // copy our results to the main list of results
-    results_lock_.lock();
-    for (unsigned int i = 0; i < timers.size(); i++) {
-      thread_timer_results.push(timers.front());
-      timers.pop();
-    }
-
-    results_lock_.unlock();
   }
-
-private:
-  Mutex results_lock_;
 };
-
-double calculate_std(queue<double> values) {
-  double average = 0.0;
-  double deviation_sum = 0.0;
-
-  for (unsigned int i = 0; i < values.size(); i++) {    // calculate average
-    average += values.front();
-    values.push(values.front());
-    values.pop();
-  }
-
-  average = average / values.size();
-
-  for (unsigned int i = 0; i < values.size(); i++) {    // calculate deviations
-    values.push(values.front() - average);
-    values.pop();
-  }
-
-  for (unsigned int i = 0; i < values.size(); i++) {
-    int square = pow(values.front(), 2);
-
-    values.pop();
-    values.push(square);
-  }
-
-  for (unsigned int i = 0; i < values.size(); i++) {
-    deviation_sum += values.front();
-    values.pop();
-  }
-
-  deviation_sum = deviation_sum / (values.size() - 1);
-
-  return sqrt(deviation_sum);
-}
 
 template<typename T>
 Timer* LockTester(T lock, 
                  int thread_count, 
                  int loop_count, 
-                 int work_count,
-                 double* std_dev) {
+                 int work_count) {
   Tester tester;
   Timer* timer = new Timer();
   queue<pthread_t> threads;
@@ -134,10 +78,8 @@ Timer* LockTester(T lock,
 
   timer->end();
 
-  delete cb_wrapper;
-  delete cb;
-
-  *std_dev = calculate_std(tester.thread_timer_results);
+  //delete cb_wrapper;
+  //delete cb;
 
   return timer;
 }
@@ -201,20 +143,16 @@ void testStarter(int thread_count,
   Spinlock* spinlock = new Spinlock();
   Timer* timer_one;
   Timer* timer_two;
-  double* std_dev_one = NULL;
-  double* std_dev_two = NULL;
 
   timer_one = LockTester<Mutex*>(mutex, 
                                  thread_count, 
                                  loop_count, 
-                                 work_count,
-                                 std_dev_one);
+                                 work_count);
 
   timer_two = LockTester<Spinlock*>(spinlock, 
                                     thread_count, 
                                     loop_count, 
-                                    work_count,
-                                    std_dev_two);
+                                    work_count);
 
   printResults("Mutex   ",
                "Spinlock",
