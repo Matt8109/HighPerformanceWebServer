@@ -15,4 +15,4 @@ void RequestStats::getStats(TicksClock::Ticks now,
                             uint32_t* reqsLastSec ) const {
 }
 
-} // namespace http
+} // namespace base

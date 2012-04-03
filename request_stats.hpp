@@ -52,6 +52,6 @@ private:
   RequestStats& operator=(const RequestStats&);
 };
 
-}  // namespace http
+}  // namespace base
 
 #endif // MCP_REQUEST_STATS_HEADER
