@@ -104,6 +104,7 @@ def build(bld):
                                    io_manager.cpp
                                    io_service.cpp
                                    request_stats.cpp
+                                   server_stat_buffer.cpp
                                    ticks_clock.cpp
                                 """,
                       includes = '.. .',
