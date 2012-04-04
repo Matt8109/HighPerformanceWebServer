@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <string>
 
+#include "server_stat_buffer.hpp"
 #include "ticks_clock.hpp"
 
 namespace base {
