@@ -11,6 +11,7 @@
 
 namespace base {
 
+using base::ServerStatBuffer;
 using base::TicksClock;
 using std::string;
 
