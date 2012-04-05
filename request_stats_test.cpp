@@ -36,7 +36,7 @@ TEST(BufferTest, TestZeroHits) {
 }
 
 TEST(BufferTest, FillTest) {
-  ServerStatBuffer buf(50);
+  ServerStatBuffer buf(10);
   uint64_t tps = static_cast<uint64_t>(TicksClock::ticksPerSecond());
 
   for (int i = 0; i < 1000; i++)

@@ -14,8 +14,7 @@ ServerStatBuffer::~ServerStatBuffer() {
 
 void ServerStatBuffer::hit(TicksClock::Ticks now) {
   uint32_t second = now / TicksClock::ticksPerSecond();
-  uint32_t block = second / slots_;
-  uint32_t bucket = block % slots_;
+  uint32_t bucket = second / (TicksClock::ticksPerSecond() / slots_);
 
   data_[bucket]++;
 
@@ -26,15 +25,17 @@ void ServerStatBuffer::hit(TicksClock::Ticks now) {
 
 uint32_t ServerStatBuffer::getHits(TicksClock::Ticks now) {
   uint32_t second = now / TicksClock::ticksPerSecond();
-  uint32_t block = second / slots_;
-  uint32_t current = block % slots_;
+  uint32_t current = second / (TicksClock::ticksPerSecond() / slots_);
   uint32_t  hits = 0;
 
-  for (int i = current; i > 0; i--) {  // read opposite direction of writes
-    if (i == -1)
-      i = slots_ -1;                   // loop around again
+  for (int count = slots_ ; count > 0; count--) {
+    hits += data_[current];
 
-    hits += data_[i];
+    if (current == 0)
+      current = slots_;
+    current--;
+
+    count--;
   }
 
   return  hits;
