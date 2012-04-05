@@ -10,8 +10,8 @@ public:
   ServerStatBuffer(int slots);
   ~ServerStatBuffer();
 
-  void hit();                   // record a 'hit'
-  uint32_t getHits();           // get the number of hits in the last second
+  void hit(TicksClock::Ticks now);                  // record a 'hit'
+  uint32_t getHits(TicksClock::Ticks now);          //  hits in the last second
 
 private:
   int slots_;

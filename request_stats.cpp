@@ -18,7 +18,7 @@ RequestStats::~RequestStats() {
 }
 
 void RequestStats::finishedRequest(int thread_num, TicksClock::Ticks now) {
-  stat_buffers_[thread_num]->hit();
+  stat_buffers_[thread_num]->hit(now);
 }
 
 void RequestStats::getStats(TicksClock::Ticks now,
@@ -29,7 +29,7 @@ void RequestStats::getStats(TicksClock::Ticks now,
   *reqsLastSec = 0;
 
   for (int i = 0; i < num_threads_; i++) 
-    *reqsLastSec += stat_buffers_[i]->getHits();
+    *reqsLastSec += stat_buffers_[i]->getHits(now);
 }
 
 } // namespace http

@@ -30,17 +30,19 @@ struct Tester {
 
 TEST(BufferTest, TestZeroHits) {
   ServerStatBuffer buf(10);
+  uint64_t tps = static_cast<uint64_t>(TicksClock::ticksPerSecond());
 
-  EXPECT_EQ(buf.getHits(), 0);
+  EXPECT_EQ(buf.getHits(TicksClock::getTicks() % tps), 0);
 }
 
 TEST(BufferTest, FillTest) {
   ServerStatBuffer buf(50);
+  uint64_t tps = static_cast<uint64_t>(TicksClock::ticksPerSecond());
 
   for (int i = 0; i < 1000; i++)
-    buf.hit();
+    buf.hit(TicksClock::getTicks() % tps);
 
-  EXPECT_EQ(1000, buf.getHits());
+  EXPECT_EQ(1000, buf.getHits(tps));
 }
 
 TEST(RequestStats, MultilpleThreadAndSeconds) {

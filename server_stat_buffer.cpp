@@ -12,20 +12,20 @@ ServerStatBuffer::~ServerStatBuffer() {
   delete [] data_;
 }
 
-void ServerStatBuffer::hit() {
-  uint32_t second = TicksClock::getTicks() / TicksClock::ticksPerSecond();
+void ServerStatBuffer::hit(TicksClock::Ticks now) {
+  uint32_t second = now / TicksClock::ticksPerSecond();
   uint32_t block = second / slots_;
   uint32_t bucket = block % slots_;
 
   data_[bucket]++;
 
   // reset the next position to zero
-  if ((bucket + 1) % slots_ != 0)
+  if (data_[(bucket + 1) % slots_] != 0)
     data_[(bucket + 1) % slots_] = 0;
 }
 
-uint32_t ServerStatBuffer::getHits() {
-  uint32_t second = TicksClock::getTicks() / TicksClock::ticksPerSecond();
+uint32_t ServerStatBuffer::getHits(TicksClock::Ticks now) {
+  uint32_t second = now / TicksClock::ticksPerSecond();
   uint32_t block = second / slots_;
   uint32_t current = block % slots_;
   uint32_t  hits = 0;
