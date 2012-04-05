@@ -1,5 +1,5 @@
-#define HIT_COUNT_PER_THREAD 1000
-#define MAX_THREADS 4
+#define HIT_COUNT 1000
+#define THREADS 4
 
 #include <iostream>
 #include <pthread.h>
@@ -11,7 +11,10 @@
 #include "thread.hpp"
 #include "ticks_clock.hpp"
 
+using base::Callback;
 using base::makeCallableMany;
+using base::makeCallableOnce;
+using base::makeThread;
 using base::RequestStats;
 using base::ServerStatBuffer;
 using base::TicksClock;
@@ -20,7 +23,7 @@ namespace {
 
 struct Tester {
   void StatTester(int thread_num, RequestStats* stats) {
-    for (int i =0; i < HIT_COUNT_PER_THREAD; i++)
+    for (int i = 0; i < HIT_COUNT; i++)
       stats->finishedRequest(thread_num, TicksClock::getTicks());
   }
 };
@@ -38,6 +41,37 @@ TEST(BufferTest, FillTest) {
     buf.hit();
 
   EXPECT_EQ(1000, buf.getHits());
+}
+
+TEST(RequestStats, MultilpleThreadAndSeconds) {
+  pthread_t threads[THREADS];
+  RequestStats stats(THREADS);
+  ServerStatBuffer buf(50);
+  Tester tester;
+  uint32_t result = 0;
+
+  for (int i = 0; i < THREADS; i++) {
+    Callback<void, int, RequestStats*>* cb = 
+        makeCallableOnce(&Tester::StatTester, &tester);
+
+    Callback<void>* cb_wrapper = 
+        makeCallableOnce(&Callback<void, int, RequestStats*>::operator(), 
+                         cb,
+                         i, 
+                         &stats);
+
+    threads[i] = makeThread(cb_wrapper);
+  }
+
+  for (int i = 0; i < THREADS; i++) 
+    pthread_join(threads[i], NULL);
+
+  stats.getStats(TicksClock::getTicks(), &result);
+
+  // expect within 5% of expected
+
+  EXPECT_GT(result, HIT_COUNT * THREADS * 0.95);
+  EXPECT_GT(HIT_COUNT * THREADS * 1.05, result);
 }
 
 }  // unamed namespace

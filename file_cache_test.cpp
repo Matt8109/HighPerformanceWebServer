@@ -18,7 +18,6 @@
 #include "test_unit.hpp"
 #include "thread.hpp"
 
-
 namespace {
 
 using std::string;
