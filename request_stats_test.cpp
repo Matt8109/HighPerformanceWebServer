@@ -1,22 +1,28 @@
+#define HIT_COUNT_PER_THREAD 1000
+#define MAX_THREADS 4
+
 #include <iostream>
 #include <pthread.h>
 
+#include "callback.hpp"
 #include "request_stats.hpp"
 #include "server_stat_buffer.hpp"
 #include "test_unit.hpp"
+#include "thread.hpp"
 #include "ticks_clock.hpp"
 
+using base::makeCallableMany;
+using base::RequestStats;
 using base::ServerStatBuffer;
 using base::TicksClock;
 
 namespace {
 
-class Tester {
-public:
-  Tester() { }
-  ~Tester() { }
-
-private:
+struct Tester {
+  void StatTester(int thread_num, RequestStats* stats) {
+    for (int i =0; i < HIT_COUNT_PER_THREAD; i++)
+      stats->finishedRequest(thread_num, TicksClock::getTicks());
+  }
 };
 
 TEST(BufferTest, TestZeroHits) {

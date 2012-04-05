@@ -32,7 +32,7 @@ uint32_t ServerStatBuffer::getHits() {
 
   for (int i = current; i > 0; i--) {  // read opposite direction of writes
     if (i == -1)
-      i = slots_ -1;                    // loop around again
+      i = slots_ -1;                   // loop around again
 
     hits += data_[i];
   }
