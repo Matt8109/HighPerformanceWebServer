@@ -15,7 +15,7 @@ public:
 
 private:
   int slots_;
-  int* data_;
+  uint64_t* data_;
 };
 
 }

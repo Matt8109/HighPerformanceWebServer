@@ -20,21 +20,18 @@ private:
 };
 
 TEST(BufferTest, TestZeroHits) {
-  ServerStatBuffer buf(100);
-
-  std::cout << TicksClock::ticksPerSecond();
+  ServerStatBuffer buf(10);
 
   EXPECT_EQ(buf.getHits(), 0);
 }
 
 TEST(BufferTest, FillTest) {
-  ServerStatBuffer buf(1000);
+  ServerStatBuffer buf(50);
 
-  for (int i = 0; i < TicksClock::ticksPerSecond() * 2; i++)
+  for (int i = 0; i < 1000; i++)
     buf.hit();
 
-  EXPECT_NEQ(buf.getHits(), 0);
-  EXPECT_GT(TicksClock::ticksPerSecond(), buf.getHits()); // hits < clock 
+  EXPECT_EQ(1000, buf.getHits());
 }
 
 }  // unamed namespace
