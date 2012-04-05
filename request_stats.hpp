@@ -51,6 +51,7 @@ public:
 
 private:
   int const num_threads_;
+  ServerStatBuffer** stat_buffers_;
   uint64_t const ticks_per_slot_;
 
   // Non-copyable, non-assignable

@@ -11,11 +11,11 @@ public:
   ~ServerStatBuffer();
 
   void hit();                   // record a 'hit'
-  uint64_t getHits();           // get the number of hits in the last second
+  uint32_t getHits();           // get the number of hits in the last second
 
 private:
   int slots_;
-  uint64_t* data_;
+  uint32_t* data_;
 };
 
 }

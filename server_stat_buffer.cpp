@@ -3,7 +3,7 @@
 namespace base {
 ServerStatBuffer::ServerStatBuffer(int slots)
     : slots_(slots),            // +1 gives us a spot we can have reset to
-      data_(new uint64_t[slots]) {   // zero without losing data
+      data_(new uint32_t[slots]) {   // zero without losing data
   for (int i = 0; i < slots; i++) 
     data_[i] = 0;
 }
@@ -13,9 +13,9 @@ ServerStatBuffer::~ServerStatBuffer() {
 }
 
 void ServerStatBuffer::hit() {
-  uint64_t second = TicksClock::getTicks() / TicksClock::ticksPerSecond();
-  uint64_t block = second / slots_;
-  uint64_t bucket = block % slots_;
+  uint32_t second = TicksClock::getTicks() / TicksClock::ticksPerSecond();
+  uint32_t block = second / slots_;
+  uint32_t bucket = block % slots_;
 
   data_[bucket]++;
 
@@ -24,11 +24,11 @@ void ServerStatBuffer::hit() {
     data_[(bucket + 1) % slots_] = 0;
 }
 
-uint64_t ServerStatBuffer::getHits() {
-  uint64_t second = TicksClock::getTicks() / TicksClock::ticksPerSecond();
-  uint64_t block = second / slots_;
-  uint64_t current = block % slots_;
-  uint64_t  hits = 0;
+uint32_t ServerStatBuffer::getHits() {
+  uint32_t second = TicksClock::getTicks() / TicksClock::ticksPerSecond();
+  uint32_t block = second / slots_;
+  uint32_t current = block % slots_;
+  uint32_t  hits = 0;
 
   for (int i = current; i > 0; i--) {  // read opposite direction of writes
     if (i == -1)
