@@ -1,4 +1,4 @@
-#define HIT_COUNT 1000
+#define HIT_COUNT 2000
 #define THREADS 4
 
 #include <iostream>
@@ -45,6 +45,21 @@ TEST(BufferTest, FillTest) {
   EXPECT_EQ(1000, buf.getHits(tps));
 }
 
+TEST(RequestStats, RollOverTestFourSeconds) {
+  int start = TicksClock::getTicks() / TicksClock::ticksPerSecond();
+  RequestStats stats(1);
+  uint32_t result = 0;
+
+  // run for around three seconds so we loop around the buffer
+  while (TicksClock::getTicks() / TicksClock::ticksPerSecond() - start < 4) {
+    stats.finishedRequest(0, TicksClock::getTicks());
+  }
+
+  stats.getStats(TicksClock::getTicks(), &result);
+
+  EXPECT_GT(TicksClock::ticksPerSecond(), result)
+}
+
 TEST(RequestStats, MultilpleThreadAndSeconds) {
   pthread_t threads[THREADS];
   RequestStats stats(THREADS);
@@ -70,10 +85,9 @@ TEST(RequestStats, MultilpleThreadAndSeconds) {
 
   stats.getStats(TicksClock::getTicks(), &result);
 
-  // expect within 5% of expected
-
-  EXPECT_GT(result, HIT_COUNT * THREADS * 0.95);
-  EXPECT_GT(HIT_COUNT * THREADS * 1.05, result);
+  // expect within 1% of expected
+  EXPECT_GT(result, HIT_COUNT * THREADS * 0.99);
+  EXPECT_GT(HIT_COUNT * THREADS * 1.01, result);
 }
 
 }  // unamed namespace
