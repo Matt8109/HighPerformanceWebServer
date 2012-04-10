@@ -1,7 +1,7 @@
 #ifndef MCP_REQUEST_STATS_HEADER
 #define MCP_REQUEST_STATS_HEADER
 
-#define SLOTS 1000000
+#define SLOTS 1000
 
 #include <inttypes.h>
 #include <string>
