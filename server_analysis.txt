@@ -1,0 +1,17 @@
+Matthew Mancuso
+April 11, 2012
+
+Abstract
+-----------------------
+	The purpose of this document is to provide an analysis of the performance breakdown of our simple server. Determining where the time is being spent,  what is causing bottlenecks to form and hopefully what can be done about it.
+
+Testing Methodologies
+-----------------------
+	Two main types of testing were used. The first - and most rudimentary of the two- was inserting simple timers (ticks_clock) in locations that were the usual suspects for performance issues, such as lock acquisition and functions dealing with IO.
+
+	The second involved running a profiler (valgrind's callgrind tool) on the server while subjecting it to the same battery of tests. This helped discover performance issues in unexpected areas of the program images.
+
+	Finally, the benchmarks were tested on multiple computers, each with a different CPU core count, to determine with areas of the program weren't scaling lineally with increase in cores.
+
+Time Breakdown
+-----------------------
