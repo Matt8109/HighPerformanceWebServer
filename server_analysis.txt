@@ -1,25 +1,52 @@
 Matthew Mancuso
-April 11, 2012 (4407)
+April 11, 2012
 
 Abstract
 ------------------------
-	The purpose of this document is to provide an analysis of the performance breakdown of our simple server. Determining where the time is being spent,  what is causing bottlenecks to form and hopefully what can be done about it.
+  The purpose of this document is to provide and analysis the performance of our simple server. Determining where the time is being spent, what is causing bottlenecks and hopefully what can be done about it.
 
 Testing Methodologies
 ------------------------
-	Two main types of testing were used. The first - and most rudimentary of the two- was inserting simple timers (ticks_clock) in locations that were the usual suspects for performance issues, such as lock acquisition and functions dealing with IO.
+  Two main types of testing were used. The first - and most rudimentary of the two- was inserting simple timers (ticks_clock) in locations that were the usual suspects for performance issues, such as lock acquisition and functions dealing with IO.
 
-	The second involved running a profiler (valgrind's callgrind tool) on the server while subjecting it to the same battery of tests. This helped discover performance issues in unexpected areas of the program images.
+  The second involved running a profiler (valgrind's callgrind tool) on the server while subjecting it to the same battery of tests. This helped discover performance issues in unexpected areas of the program images.
 
-	For the benchmarks, the server was allowed to use 4 worker threads. httperf was set to send 1,000 requests per connection, using 10 connections, resulting in 10,000 total requests. The runtime for this test averaged between 10-11 seconds for completion.
+  For the benchmarks, the server was allowed to use 4 worker threads. httperf was set to send 1,000 requests per connection, making 10 connections, resulting in 10,000 total requests. New connections were spawned at the maximum rate of 4 per second and only if previous connections had finished. The runtime for this test averaged between 10-11 seconds for completion.
 
-Time Breakdown
+Performance Overview
 ------------------------
-	How the server handles requests is the best place to start looking at performance. In terms of time, this is broken down into two major functions, Parser::parseRequest and HTTPServerConnection::handleRequest which take up approximately 60% and 30% respectively of the total time it takes to complete the parent function HTTPServerConnection::readDone.
+  How the server handles incoming requests is the best place to start looking at performance. In terms of time, this is broken down into two major functions, Parser::parseRequest and HTTPServerConnection::handleRequest which take up approximately 60% and 30% respectively of the total time it takes to complete the parent function HTTPServerConnection::readDone.
 
-	 
+  For parseRequest, the most expensive operation was the Parser::parseString function, taking up 40% of the overall time for parseRequest. It turns out that over the course of testing a lot of errors were being thrown. The reason why is a bit out of scope, but it seems a lot of empty request buffers were being passed to the function. The error handling mechanisms represent a staggering 34% of the time it takes for parseRequest to complete, with the error handling routines being called 10k times, or once per request. This behavior can be seen by making a single request or with httperf requests. However, this isn't really a true server bottleneck, it is a problem that one can throw more CPU's at; error handling in a thread doesn't effect the forward progress of other threads.
 
+  HTTPServerConnection::handleRequest spends the plurality of its time (12%) writing to buffers. The time it spends acquiring locks (m_write_) is a negligible 0.01%. The major holdup seems to be accessing the write pointer in the buffer from its internal queue and writing to chunks. As with parseRequest the slowdowns in these methods wont effect the progress of other threads, thus adding more cores/threads wont make the problem worse for other threads. It should also be noted at this time that operations on the buffer also consume about 30% of the time it takes for the server to write to the network buffers.
+
+  So where are the points of contention that will have an affect on scalability? While there overall wasn't a lot of contention between shared components, it seems like the first bottleneck to develop will be in the fast thread pool. When a descriptor wanted to schedule its read upon becoming ready in Descriptor::readWhenReady, adding the task took around 250k cpu cycles. Of those cycles approximately 140k were spend in the locking and unlocking procedures. Descriptor::readIfWaiting also makes the same call to ThreadPoolFast::addTask and spent about the same time on average waiting. It should be noted these are cycles during with the thread pool is either acquiring the lock or holding it, meaning other threads can't make progress in adding tasks.
+
+  Based on the analysis of TreadPoolFast in the thread pool benchmarking, it might make sense in certain circumstances to use the normal thread pool. If we are under heavy resource contention, the fast pool's checking for a free thread and empty queue is a scenario that will be unlikely and thus waste cpu cycles. 
+
+Most Expensive Functions
+------------------------
+Ordered by % of total CPU time taken
+
+  Name                          % of Total Time     Called
+  ------------------------      ---------------     ---------
+  Error Handling(libgcc)        7.50                140k     (multiple funcs)
+  Buffer::m_write               5.17                70k
+  |- string::push_back          3.73                510k
+  Buffer::iterator::next        4.02                620k
+  pthread_mutex_lock            2.90                261k
+  pthread_mutex_unlock          2.63                261k
+  Parser::parseLine             2.40                30k
 
 Shortcomings of the Test
 ------------------------
-	The major issues with this test is it's simplicity relative to 'real word' scenarios. We arn't stressing some components of the server, like loading files from disk and thrashing the file cache, because we are requesting the same page over and over. Thus there could still be hidden scalability issues that would require a more through testing.
+  The major issues with this test is its simplicity relative to 'real word' scenarios. First, without access to 'real' server hardware, that is systems with a multitude of cores, you are never going to see some types of contention issues. In this case running with 4 threads you are only doing 4 things at a time. Having minimized the critical sections in our components, the chances of any two threads needing to access the same critical section in a program with a couple thousand lines of code at the same time is relatively small. Especially if we are seeing slowdowns inside threads more than between them (see parseRequest and handleRequest).
+
+  Additionally the workload itself isn't realistic in stressing the components in certain ways or those components weren't included. For example the file cache was, as far as I can tell, not used. Even if it was however, requesting the same file over and over again tells us nothing about its performance. If every thread gets a read hit, and we only need to use a write lock once, we wont know how scenarios with a lot of file cache thrashing will effect the rest of the system. Nor do we really know how the system will react to clients on slow and fast network connections in various distributions. Does our server perform well with a lot of high latency (eg mobile) connections, for example.
+
+Conclusion
+------------------------
+Overall the server performed extremely well, and it is clear the extra time spent implementing efficient structures drastically improved performance. Much of the limitations came from portions of the code that only slowed down a specific thread, and thus could be alleviated with a more powerful processor.
+
+At this point the thread pool looks to be the weakest link however, all told adding tasks to the pool only took 0.13% of the total CPU time. It will be some time before the pool itself becomes the bottleneck; we are much more likely to see larger payouts in performance by improving the buffers and parsing.
