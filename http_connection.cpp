@@ -9,7 +9,6 @@
 #include "http_connection.hpp"
 #include "http_parser.hpp"
 #include "http_response.hpp"
-#include "http_service.hpp"
 #include "logging.hpp"
 #include "request_stats.hpp"
 #include "thread_pool_fast.hpp"
@@ -23,8 +22,9 @@ using base::RequestStats;
 using base::ThreadPoolFast;
 using base::TicksClock;
 
-HTTPServerConnection::HTTPServerConnection(IOService* service, int client_fd)
-  : Connection(service, client_fd) {
+HTTPServerConnection::HTTPServerConnection(HTTPService* service, int client_fd)
+  : Connection(service->service_manager()->io_manager(), client_fd),
+    my_service_(service) {
   startRead();
 }
 
@@ -56,11 +56,11 @@ bool HTTPServerConnection::handleRequest(Request* request) {
   // connection belongs.
   if (request_.address == "quit") {
     LOG(LogMessage::NORMAL) << "Server stop requested!";
-    io_service()->stop();
+    my_service_->stop();
     return false;
   }
 
-  RequestStats* stats = io_service()->stats();
+  RequestStats* stats = my_service_->stats();
   if (request_.address == "stats") {
     uint32_t reqsLastSec;
     stats->getStats(TicksClock::getTicks(), &reqsLastSec);
@@ -171,8 +171,8 @@ bool HTTPServerConnection::handleRequest(Request* request) {
   return true;
 }
 
-HTTPClientConnection::HTTPClientConnection(IOService* service)
-  : Connection(service) { }
+HTTPClientConnection::HTTPClientConnection(HTTPService* service)
+  : Connection(service->service_manager()->io_manager()) { }
 
 void HTTPClientConnection::connect(const string& host,
                                    int port,

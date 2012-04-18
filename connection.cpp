@@ -11,16 +11,15 @@
 #include "callback.hpp"
 #include "connection.hpp"
 #include "io_manager.hpp"
-#include "io_service.hpp"
 #include "logging.hpp"
 
 namespace base {
 
-Connection::Connection(IOService* io_service, int client_fd)
+Connection::Connection(IOManager* io_manager, int client_fd)
   : writing_(false),
     client_fd_(client_fd),
     closed_(false),
-    io_service_(io_service),
+    io_manager_(io_manager),
     in_error_(false),
     refs_(0) {
 
@@ -28,15 +27,14 @@ Connection::Connection(IOService* io_service, int client_fd)
   // ownership of the upcalls.
   Callback<void>* readUpCall = makeCallableMany(&Connection::doRead, this);
   Callback<void>* writeUpCall = makeCallableMany(&Connection::doWrite, this);
-  IOManager* io_manager = io_service_->io_manager();
-  io_desc_ = io_manager->newDescriptor(client_fd_, readUpCall, writeUpCall);
+  io_desc_ = io_manager_->newDescriptor(client_fd_, readUpCall, writeUpCall);
 }
 
-Connection::Connection(IOService* io_service)
+Connection::Connection(IOManager* io_manager)
   : writing_(false),
     client_fd_(-1),
     closed_(true),
-    io_service_(io_service),
+    io_manager_(io_manager),
     io_desc_(NULL),
     in_error_(false),
     refs_(0) {
@@ -56,8 +54,7 @@ Connection::~Connection() {
   }
 
   if (io_desc_) {
-    IOManager* io_manager = io_service_->io_manager();
-    io_manager->delDescriptor(io_desc_);
+    io_manager_->delDescriptor(io_desc_);
   }
 }
 
@@ -120,8 +117,7 @@ void Connection::startConnect(const string& host, int port) {
 
   } else {
     Callback<void>* write_cb = makeCallableMany(&Connection::doConnect, this);
-    IOManager* io_manager = io_service_->io_manager();
-    io_desc_ = io_manager->newDescriptor(client_fd_, NULL, write_cb);
+    io_desc_ = io_manager_->newDescriptor(client_fd_, NULL, write_cb);
     io_desc_->writeWhenReady();
   }
 }

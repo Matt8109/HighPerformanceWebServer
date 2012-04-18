@@ -5,7 +5,7 @@
 #include "http_service.hpp"
 
 using base::AcceptCallback;
-using base::IOService;
+using base::ServiceManager;
 using base::makeCallableMany;
 using http::HTTPService;
 
@@ -27,12 +27,12 @@ int main(int argc, char* argv[]) {
 
   // Setup the protocols. The HTTP server accepts requests to stop the
   // IOService machinery and requests for its stats.
-  IOService io_service(num_workers);
-  HTTPService http_service(http_port, &io_service);
+  ServiceManager service(num_workers);
+  HTTPService http_service(http_port, &service);
 
   // Loop until IOService is stopped via /quit request against the
   // HTTP Service.
-  io_service.start();
+  service.run();
 
   return 0;
 }

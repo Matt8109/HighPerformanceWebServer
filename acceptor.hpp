@@ -1,13 +1,18 @@
 #ifndef MCP_BASE_ACCEPTOR_HEADER
 #define MCP_BASE_ACCEPTOR_HEADER
 
-#include "io_service.hpp"
+#include "callback.hpp"
 #include "lock.hpp"
 
 namespace base {
 
 class IOManager;
 class Descriptor;
+
+// AcceptCallback is an upcall that takes a socket endpoint. The
+// endpoint is created as a result of a connect request to the
+// service. See ServiceManager::registerAcceptor() for details.
+typedef Callback<void, int> AcceptCallback;
 
 // The Acceptor handles a listening socket.  It uses an assigned
 // io_manager so to never block. Upon forming a connection, the

@@ -1,22 +1,20 @@
-#include "acceptor.hpp"
-#include "io_manager.hpp"
-#include "io_service.hpp"
+#include "service_manager.hpp"
 
 namespace base {
 
-IOService::IOService(int num_workers)
-  : io_manager_(new IOManager(num_workers)),
-    stats_(num_workers),
+ServiceManager::ServiceManager(int num_workers)
+  : num_workers_(num_workers),
+    io_manager_(new IOManager(num_workers)),
     stop_requested_(false),
     stopped_(false) {
  }
 
-IOService::~IOService() {
-  // It would be problematic if start() was still running after the
+ServiceManager::~ServiceManager() {
+  // It would be problematic if run() was still running after the
   // call to stop().  But that can't happen, for the following.  If
-  // start() was called, we assume that the server will only go out of
-  // scope -- what would get us here -- after start() returned, since
-  // the latter blocks until a stop() is issued.  If start() wasn't
+  // run() was called, we assume that the server will only go out of
+  // scope -- what would get us here -- after run() returned, since
+  // the latter blocks until a stop() is issued.  If run() wasn't
   // even called, then there's no worries overlapping that and the
   // destructor.
   //
@@ -39,11 +37,11 @@ IOService::~IOService() {
   delete io_manager_;
 }
 
-void IOService::registerAcceptor(int port, AcceptCallback* cb) {
+void ServiceManager::registerAcceptor(int port, AcceptCallback* cb) {
   acceptors_.push_back(new Acceptor(io_manager_, port, cb));
 }
 
-void IOService::start() {
+void ServiceManager::run() {
   for (Acceptors::iterator it = acceptors_.begin();
        it != acceptors_.end();
        ++it) {
@@ -53,7 +51,7 @@ void IOService::start() {
 
   // We must hold here until stop() completed running, which could be
   // *longer* than io_manager.poll() returning. If the destructor,
-  // which could be issued after start(), kicks in, it could interfere
+  // which could be issued after run(), kicks in, it could interfere
   // with stop().
 
   m_stop_.lock();
@@ -63,7 +61,7 @@ void IOService::start() {
   m_stop_.unlock();
 }
 
-void IOService::stop() {
+void ServiceManager::stop() {
   // Allow only one thread to actually execute the stop(). All others
   // would wait for the latter to finish, if stop() was called
   // concurrently.
@@ -87,11 +85,11 @@ void IOService::stop() {
 
   // The stopping sequence waits until all previously enqueued
   // callbacks were served. After which, the worker threads are
-  // joined. The poll() call in IOService::start() will be broken
+  // joined. The poll() call in ServiceManager::run() will be broken
   // somewhere during the stop() call.
   io_manager_->stop();
 
-  // At this stage the internal machinery of the IOService can be
+  // At this stage the internal machinery of the ServiceManager can be
   // destroyed, since all activity was guaranteed to have stopped.
   m_stop_.lock();
   stopped_ = true;
@@ -99,7 +97,7 @@ void IOService::stop() {
   m_stop_.unlock();
 }
 
-bool IOService::stopped() const {
+bool ServiceManager::stopped() const {
   ScopedLock l(&m_stop_);
   return stop_requested_;
 }

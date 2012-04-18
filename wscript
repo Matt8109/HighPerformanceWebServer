@@ -102,8 +102,8 @@ def build(bld):
                                    connection.cpp
                                    descriptor_poller_epoll.cpp
                                    io_manager.cpp
-                                   io_service.cpp
                                    request_stats.cpp
+                                   service_manager.cpp
                                    ticks_clock.cpp
                                 """,
                       includes = '.. .',
