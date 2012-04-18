@@ -41,6 +41,7 @@ public:
 private:
   Request      request_;
   HTTPService* my_service_;  // not owned here
+  FileCache*   file_cache_;  // not owned here
 
   // base::Connection is ref counted. Use release() to
   // delete. Normally, you won't need to because the io_manager will

@@ -14,7 +14,8 @@ using base::makeCallableOnce;
 
 HTTPService::HTTPService(int port, ServiceManager* service_manager)
   : service_manager_(service_manager),
-    stats_(service_manager->num_workers()) {
+    stats_(service_manager->num_workers()),
+    file_cache_(50<<20 /* 50MB */) {
   AcceptCallback* cb = makeCallableMany(&HTTPService::acceptConnection, this);
   service_manager_->registerAcceptor(port, cb /* ownership xfer */);
 }

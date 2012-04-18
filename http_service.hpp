@@ -4,6 +4,7 @@
 #include <string>
 
 #include "lock.hpp"
+#include "file_cache.hpp"
 #include "request_stats.hpp"
 #include "service_manager.hpp"
 
@@ -11,9 +12,10 @@ namespace http {
 
 using std::string;
 using base::AcceptCallback;
-using base::ServiceManager;
+using base::FileCache;
 using base::Notification;
 using base::RequestStats;
+using base::ServiceManager;
 
 class HTTPClientConnection;
 class Response;
@@ -62,10 +64,12 @@ public:
 
   RequestStats* stats() { return &stats_; }
   ServiceManager* service_manager() { return service_manager_; }
+  FileCache* file_cache() { return &file_cache_; }
 
 private:
   ServiceManager* service_manager_;  // not owned here
   RequestStats    stats_;
+  FileCache       file_cache_;
 
   // Starts the server-side of a new HTTP connection established on
   // socket 'client_fd'.

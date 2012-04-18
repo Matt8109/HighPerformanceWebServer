@@ -18,13 +18,15 @@ namespace http {
 
 using std::ostringstream;
 using base::Buffer;
+using base::FileCache;
 using base::RequestStats;
 using base::ThreadPoolFast;
 using base::TicksClock;
 
 HTTPServerConnection::HTTPServerConnection(HTTPService* service, int client_fd)
   : Connection(service->service_manager()->io_manager(), client_fd),
-    my_service_(service) {
+    my_service_(service),
+    file_cache_(service->file_cache()) {
   startRead();
 }
 
@@ -94,11 +96,12 @@ bool HTTPServerConnection::handleRequest(Request* request) {
     request_.address = "index.html";
   }
 
-  int fd = open(request_.address.c_str(), O_RDONLY);
-  if (fd != -1) {
-    struct stat stat_buf;
-    fstat(fd, &stat_buf);
+  // Grab from or load the file to the cache.
+  Buffer* buf;
+  int error;
+  FileCache::CacheHandle h = file_cache_->pin(request_.address, &buf, & error);
 
+  if (h != 0) {
     m_write_.lock();
 
     out_.write("HTTP/1.1 200 OK\r\n");
@@ -107,26 +110,14 @@ bool HTTPServerConnection::handleRequest(Request* request) {
     out_.write("Accept-Ranges: bytes\r\n");
 
     ostringstream os;
-    os << "Content-Length: " << stat_buf.st_size << "\r\n";
+    os << "Content-Length: " << buf->readSize() << "\r\n";
     out_.write(os.str().c_str());
     out_.write("Content-Type: text/html\r\n");
     out_.write("\r\n");
-    out_.reserve(stat_buf.st_size);
 
-    m_write_.unlock();
+    // Copy from cache into the connection buffer.
+    out_.copyFrom(buf);
 
-    // This is going to break with files bigger than
-    // Buffer::Blocksize bytes, But... let's leave it for now.
-
-    int res = read(fd, out_.writePtr(), out_.writeSize());
-    if (res < 0) {
-      perror("Error reading file");
-      exit(1);
-    }
-    ::close(fd);
-
-    m_write_.lock();
-    out_.advance(res);
     m_write_.unlock();
 
   } else {
