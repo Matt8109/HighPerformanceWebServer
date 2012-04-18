@@ -48,7 +48,7 @@ def configure(conf):
     conf.setenv('debug')
     conf.env.CXXFLAGS = ['-g', '-Wall', '--pedantic',
                          '-fno-omit-frame-pointer']
-    #conf.env.LINKFLAGS = ['-export-dynamic']
+    conf.env.LINKFLAGS = ['-export-dynamic']
 
     #
     # Configure a release environment
@@ -84,6 +84,7 @@ def build(bld):
                       source = """ buffer.cpp
                                    child_process.cpp
                                    file_cache.cpp
+                                   op_generator.cpp
                                    thread.cpp
                                    thread_pool_fast.cpp
                                    thread_pool_normal.cpp
@@ -221,6 +222,15 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'hazard_pointers_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'hazard_pointers_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'http_parser_test.cpp',
                       includes = '.. .',
                       uselib = '',
@@ -235,6 +245,24 @@ def build(bld):
                       uselib = '',
                       uselib_local = 'base',
                       target = 'list_set_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'lock_free_list_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'lock_free_list_test',
+                      unit_test = 1
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'markable_pointer_test.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = 'concurrency',
+                      target = 'markable_pointer_test',
                       unit_test = 1
                     )
 
