@@ -86,6 +86,9 @@ public:
   void acquire();
   void release();
 
+  // accessors
+
+  IOManager* io_manager() { return io_manager_; }
 
 protected:
   // There should be at most one thread on the read portion of the

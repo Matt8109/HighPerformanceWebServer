@@ -81,6 +81,17 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
+                      source = """ circular_buffer.cpp
+                                   list_set.cpp
+                               """,
+                      includes = '.. .',
+                      uselib = 'PTHREAD',
+                      uselib_local = 'logging',
+                      target = 'base',
+                      name = 'base'
+                    )
+
+    bld.new_task_gen( features = 'cxx cstaticlib',
                       source = """ buffer.cpp
                                    child_process.cpp
                                    file_cache.cpp
@@ -128,14 +139,14 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cstaticlib',
-                      source = """ circular_buffer.cpp
-                                   list_set.cpp
+                      source = """ kv_connection.cpp
+                                   kv_service.cpp
                                """,
                       includes = '.. .',
                       uselib = 'PTHREAD',
-                      uselib_local = 'logging',
-                      target = 'base',
-                      name = 'base'
+                      uselib_local = 'net_server concurrency',
+                      target = 'kv_server',
+                      name = 'kv_server'
                     )
 
 
@@ -344,11 +355,34 @@ def build(bld):
                       source = 'server.cpp',
                       includes = '.. .',
                       uselib = '',
-                      uselib_local = """ http_server
+                      uselib_local = """ kv_server
+                                         http_server
                                          net_server
                                          concurrency
                                      """,
                       target = 'server'
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'client_sync.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = """ http_server
+                                         net_server
+                                         concurrency
+                                     """,
+                      target = 'client_sync'
+                    )
+
+    bld.new_task_gen( features = 'cxx cprogram',
+                      source = 'client_async.cpp',
+                      includes = '.. .',
+                      uselib = '',
+                      uselib_local = """ http_server
+                                         net_server
+                                         concurrency
+                                     """,
+                      target = 'client_async'
                     )
 
     #
