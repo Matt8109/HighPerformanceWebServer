@@ -10,6 +10,8 @@ namespace base {
 
 using std::string;
 
+class IOManager;
+
 // This class interacts directly with the io_manager so to support
 // asynchronous communication protocols. To implement a protocol's
 // format (requests and responses layouts and semantics), a sub-class
@@ -46,7 +48,7 @@ using std::string;
 //
 //   class MyServerConnection : public base::Connection {
 //   public:
-//     MyServerConnection(IOService* io_service, int client fd)
+//     MyServerConnection(IOManager* io_manager, int client fd)
 //       : Connection(io_manager, fd) {
 //       startRead();
 //     }
@@ -69,7 +71,6 @@ using std::string;
 //
 
 class Descriptor;
-class IOService;
 
 class Connection {
 public:
@@ -87,7 +88,7 @@ public:
 
   // accessors
 
-  IOService* io_service() const { return io_service_; }
+  IOManager* io_manager() { return io_manager_; }
 
 protected:
   // There should be at most one thread on the read portion of the
@@ -106,13 +107,13 @@ protected:
   // Passive (server-side) connection constructor. The ref counter is
   // not incremented here as a sub-class passive constructor would
   // probably issue a startRead() right away.
-  Connection(IOService* io_service, int client_fd);
+  Connection(IOManager* io_manager, int client_fd);
 
   // Active (client-side) connection constructor. Builds a connection
   // and prepares it to be connected. The ref counter is not
   // incremented here, since a sub-class would want to issue a
   // 'startConnect()' to trigger the connection process right away.
-  explicit Connection(IOService* io_service);
+  explicit Connection(IOManager* io_manager);
 
   // Issued when refs_ become zero. Do not destroy the object directly
   // through this destructor.
@@ -165,7 +166,7 @@ protected:
 private:
   int             client_fd_;       // socket to peer
   bool            closed_;          // fd in use?
-  IOService*      io_service_;      // not owned by this
+  IOManager*      io_manager_;      // not owned by this
   Descriptor*     io_desc_;         // owned by this
   bool            in_error_;        // last op failed?
   string          error_string_;    // last error description

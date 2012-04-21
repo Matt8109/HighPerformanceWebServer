@@ -7,14 +7,13 @@
 #include "callback.hpp"
 #include "connection.hpp"
 #include "http_request.hpp"
-#include "io_service.hpp"
+#include "http_service.hpp"
 #include "lock.hpp"
 
 namespace http {
 
 using std::queue;
 using std::string;
-using base::IOService;
 using base::Mutex;
 using base::Notification;
 
@@ -37,13 +36,12 @@ class Response;
 
 class HTTPServerConnection : public base::Connection {
 public:
-
-  // Takes the IOService that this connection belongs to.  This enables
-  // terminating it if the special 'quit' request arrives
-  HTTPServerConnection(IOService* service, int client_fd);
+  HTTPServerConnection(HTTPService* service, int client_fd);
 
 private:
-  Request    request_;
+  Request      request_;
+  HTTPService* my_service_;  // not owned here
+  FileCache*   file_cache_;  // not owned here
 
   // base::Connection is ref counted. Use release() to
   // delete. Normally, you won't need to because the io_manager will
@@ -77,10 +75,6 @@ private:
 //
 //   The class is safe in that sendRequests() may be issued
 //   concurrently. connect() should be issued only once, though.
-class HTTPClientConnection;
-typedef base::Callback<void, HTTPClientConnection*> ConnectCallback;
-typedef base::Callback<void, Response*> ResponseCallback;
-
 class HTTPClientConnection : public base::Connection {
 public:
   // Copies 'request' into the connection output buffer and schedules
@@ -93,6 +87,7 @@ public:
 
 private:
   friend class HTTPService;
+  HTTPService*             my_service_;
 
   // The connect callback is always issued, independently of the
   // result of the connect itself. 'connect_cb_' would thus self
@@ -102,11 +97,7 @@ private:
   Mutex                    m_response_;    // protects the queue below
   queue<ResponseCallback*> response_cbs_;  // owned here
 
-  // Client connections take the IOService they belong to but unlike
-  // Server connections they only use the server's io_manager. We take
-  // the Server here, too, so that both client and server connections
-  // would use the same server stopping procedure.
-  explicit HTTPClientConnection(IOService* service);
+  explicit HTTPClientConnection(HTTPService* service);
 
   // base::Connection is reference counted so the destructor shouldn't
   // be issued directly. The connection would get deleted if

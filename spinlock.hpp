@@ -12,8 +12,7 @@ namespace base {
 // represented by a boolean and all accesses to that state are
 // explicit in terms of atomicity and memory ordering expected.
 //
-class Spinlock
-{
+class Spinlock {
 public:
   Spinlock() : locked_(false) {}
 

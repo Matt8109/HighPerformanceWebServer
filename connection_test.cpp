@@ -11,26 +11,26 @@
 #include "acceptor.hpp"
 #include "callback.hpp"
 #include "connection.hpp"
-#include "io_service.hpp"
 #include "lock.hpp"
 #include "logging.hpp"
+#include "service_manager.hpp"
 #include "test_unit.hpp"
 #include "thread.hpp"
 
 namespace {
+
+using std::string;
+using std::vector;
 
 using base::AcceptCallback;
 using base::Acceptor;
 using base::Buffer;
 using base::Callback;
 using base::Connection;
-using base::IOService;
 using base::makeCallableMany;
 using base::makeCallableOnce;
 using base::Notification;
-
-using std::string;
-using std::vector;
+using base::ServiceManager;
 
 // ****************************************
 // Simple Synchronous Echo Server
@@ -187,7 +187,7 @@ bool SyncClient::recvMsg(string* msg) {
 
 class EchoServerConnection : public Connection {
 public:
-  EchoServerConnection(IOService* service, int conn_fd);
+  EchoServerConnection(ServiceManager* service, int conn_fd);
 
 private:
   // Connection is ref counted.
@@ -198,7 +198,7 @@ private:
 
 class EchoClientConnection : public Connection {
 public:
-  explicit EchoClientConnection(IOService* service);
+  explicit EchoClientConnection(ServiceManager* service);
 
   void connect(const char* host, int port);
   void sendMsg(const string& msg);
@@ -219,7 +219,7 @@ private:
 
 class EchoService {
 public:
-  EchoService(IOService* io_service);
+  EchoService(ServiceManager* service);
   ~EchoService() { }
 
   void accept(int conn_fd_);
@@ -227,15 +227,15 @@ public:
   void disconnect(EchoClientConnection* conn);
 
 private:
-  IOService* io_service_;  // not owned here
+  ServiceManager* service_;  // not owned here
 };
 
 // ****************************************
 // Echo Server Side
 //
 
-EchoServerConnection::EchoServerConnection(IOService* service, int conn_fd)
-  : Connection(service, conn_fd) {
+EchoServerConnection::EchoServerConnection(ServiceManager* service, int conn_fd)
+  : Connection(service->io_manager(), conn_fd) {
   startRead();
 }
 
@@ -258,8 +258,8 @@ bool EchoServerConnection::readDone() {
 // Echo Client Side
 //
 
-EchoClientConnection::EchoClientConnection(IOService* service)
-  : Connection(service) {
+EchoClientConnection::EchoClientConnection(ServiceManager* service)
+  : Connection(service->io_manager()) {
 }
 
 EchoClientConnection::~EchoClientConnection() {
@@ -309,7 +309,7 @@ void EchoClientConnection::disconnect() {
 // Service class
 //
 
-EchoService::EchoService(IOService* io_service) : io_service_(io_service) { }
+EchoService::EchoService(ServiceManager* service) : service_(service) { }
 
 void EchoService::accept(int conn_fd) {
   if (conn_fd < 0) {
@@ -317,13 +317,13 @@ void EchoService::accept(int conn_fd) {
     return;
   }
 
-  new EchoServerConnection(io_service_, conn_fd);
+  new EchoServerConnection(service_, conn_fd);
 }
 
 void EchoService::connect(const char* host,
                           int port,
                           EchoClientConnection** conn) {
-  *conn = new EchoClientConnection(io_service_);
+  *conn = new EchoClientConnection(service_);
   (*conn)->connect(host, port);
 }
 
@@ -352,11 +352,11 @@ TEST(Echo, SyncClientSyncServer) {
 }
 
 TEST(Echo, SyncClientAsyncServer) {
-  IOService io_service(1 /* one worker */);
-  EchoService echo_service(&io_service);
+  ServiceManager smgr(1 /* one worker */);
+  EchoService echo_service(&smgr);
   AcceptCallback* cb = makeCallableMany(&EchoService::accept, &echo_service);
-  io_service.registerAcceptor(15001, cb);
-  Callback<void>* body = makeCallableOnce(&IOService::start, &io_service);
+  smgr.registerAcceptor(15001, cb);
+  Callback<void>* body = makeCallableOnce(&ServiceManager::run, &smgr);
   pthread_t tid = base::makeThread(body);
 
   SyncClient client("127.0.0.1", "15001");
@@ -367,7 +367,7 @@ TEST(Echo, SyncClientAsyncServer) {
   EXPECT_EQ(in_string, out_string);
   client.close();
 
-  io_service.stop();
+  smgr.stop();
   pthread_join(tid, NULL);
 }
 
@@ -377,9 +377,9 @@ TEST(Echo, AsyncClientSyncServer) {
   pthread_t server_tid = base::makeThread(server_body);
 
   // We spin a service but only for the clients' benefit.
-  IOService io_service(1 /* one worker */);
-  EchoService echo_service(&io_service);
-  Callback<void>* body = makeCallableOnce(&IOService::start, &io_service);
+  ServiceManager smgr(1 /* one worker */);
+  EchoService echo_service(&smgr);
+  Callback<void>* body = makeCallableOnce(&ServiceManager::run, &smgr);
   pthread_t client_tid = base::makeThread(body);
 
   EchoClientConnection* client;
@@ -394,16 +394,16 @@ TEST(Echo, AsyncClientSyncServer) {
 
   client->sendMsg("quit");
   pthread_join(server_tid, NULL);
-  io_service.stop();
+  smgr.stop();
   pthread_join(client_tid, NULL);
 }
 
 TEST(Echo, AsyncClientAsyncServer) {
-  IOService io_service(1 /* one worker */);
-  EchoService echo_service(&io_service);
+  ServiceManager smgr(1 /* one worker */);
+  EchoService echo_service(&smgr);
   AcceptCallback* cb = makeCallableMany(&EchoService::accept, &echo_service);
-  io_service.registerAcceptor(15001, cb);
-  Callback<void>* body = makeCallableOnce(&IOService::start, &io_service);
+  smgr.registerAcceptor(15001, cb);
+  Callback<void>* body = makeCallableOnce(&ServiceManager::run, &smgr);
   pthread_t tid = base::makeThread(body);
 
   EchoClientConnection* client;
@@ -424,16 +424,16 @@ TEST(Echo, AsyncClientAsyncServer) {
 
   echo_service.disconnect(client);
 
-  io_service.stop();
+  smgr.stop();
   pthread_join(tid, NULL);
 }
 
 TEST(Echo, WrongPort) {
-  IOService io_service(1 /* one worker */);
-  EchoService echo_service(&io_service);
+  ServiceManager smgr(1 /* one worker */);
+  EchoService echo_service(&smgr);
   AcceptCallback* cb = makeCallableMany(&EchoService::accept, &echo_service);
-  io_service.registerAcceptor(15001, cb);
-  Callback<void>* body = makeCallableOnce(&IOService::start, &io_service);
+  smgr.registerAcceptor(15001, cb);
+  Callback<void>* body = makeCallableOnce(&ServiceManager::run, &smgr);
   pthread_t tid = base::makeThread(body);
 
   EchoClientConnection* client;
@@ -442,7 +442,7 @@ TEST(Echo, WrongPort) {
 
   echo_service.disconnect(client);
 
-  io_service.stop();
+  smgr.stop();
   pthread_join(tid, NULL);
 }
 

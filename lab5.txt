@@ -1,0 +1,60 @@
+Lab 5
+
+One way to look at our HTTP machinery is this: the
+HTTPService/HTTPConnection classes are a way to get requests for html
+docs from the network and to issue these requests against the
+FileCache you built. (Incidentally, nobody other than Matt mentioned
+the fact that the Cache was disconnected. Fixed. Thanks Matt.) So if
+we ask for "http://<server>:<http_port>/<doc>" we'd get a doc from
+cache.
+
+In this lab, we'd like to do a similar but independent procotol than
+HTTP. We'll build a "key value" service/connection and we'll attach it
+to a lock-free data structure. The end result should be this. If we
+ask for "http://<server>:<kv_port>/<key>" we should read the data
+associated with <key>.
+
+Read data? "Where from?" you may ask. "You tell me," I'd answer. :)
+
+This means you're also responsible for building the data structure
+behind the protocol. The structure could be either a hash table or a
+skip list. Regardless of the choice, it should be built atop of the
+lock-free list with memory management, whose code is given to you.
+
+week 1 deadline 4/26
+======
+
+Your job this week is to develop the data structure behind our KV
+protocol. Depending on what you choose to do your files will be called
+(skeleton not provided):
+lock_free_[hash_table|skip_list].hpp
+lock_free_[hash_tabke|skip_list].cpp
+lock_free_[hash_table|skip_list]_test.cpp
+
+I recommend going for the hash table. But you should feel free to
+choose.
+
+The files you want to look into:
+hazard_pointers.hpp
+markable_pointer.hpp
+lock_free_list.hpp
+op_generator.hpp
+
+week 2 deadline 5/03
+======
+
+Your job this week is to connect your structure to the server and
+benchmark the results. The files you'll need to work on (skeleton
+provided):
+kv_service.{cpp,hpp}
+kv_connection.{cpp,hpp}
+
+You'd also need a (skeleton not provided):
+kv_benchmark.cpp
+
+The files you want to look into:
+connection_test.cpp
+http_service.{cpp,hpp}
+http_connection.{cpp,hpp}
+client_sync.cpp
+client_async.cpp
