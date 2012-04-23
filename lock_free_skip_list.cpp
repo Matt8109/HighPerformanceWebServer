@@ -2,7 +2,7 @@
 
 namespace lock_free {
 
-LockFreeSkipList::LockFreeSkipList(int num_threads) 
+LockFreeSkipList::LockFreeSkipList() 
     : LSentinel(LONG_MIN, MAX_HEIGHT),
       RSentinel(LONG_MAX, MAX_HEIGHT) { 
   for (int i = 0; i < MAX_HEIGHT; i++)            // init sentinels

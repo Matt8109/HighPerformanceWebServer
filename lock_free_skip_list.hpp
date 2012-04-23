@@ -34,7 +34,7 @@ struct Node {
 
 class LockFreeSkipList {
 public:
-  explicit LockFreeSkipList(int num_threads);
+  explicit LockFreeSkipList();
 
   // The destructor is not thread-safe
   ~LockFreeSkipList();

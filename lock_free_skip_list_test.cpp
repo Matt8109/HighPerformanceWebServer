@@ -1,26 +1,81 @@
+#define LOOP_COUNT 100
+
 #include <pthread.h>  // barriers
 
 #include "callback.hpp"
 #include "lock_free_skip_list.cpp"
 #include "test_unit.hpp"
+#include "thread.hpp"
+
+using base::Callback;
+using base::makeCallableMany;
+using base::makeThread;
+using lock_free::LockFreeSkipList;
 
 namespace {
-  TEST(Basic, SimpleOperations) {
-    lock_free::LockFreeSkipList test(5);
 
-    test.Add(3);
-    test.Add(10);
-
-    EXPECT_TRUE(test.Contains(3));
-    EXPECT_TRUE(test.Contains(10));
-    EXPECT_FALSE(test.Contains(5));
-
-    test.Remove(3);
-    EXPECT_FALSE(test.Contains(3));
-    EXPECT_TRUE(test.Contains(10));
+struct Tester {
+  void SkipListTester(int start, LockFreeSkipList* skip_list) {
+    for (int i = start; i < start + LOOP_COUNT; i++)
+      skip_list->Add(i);
   }
+};
+
+TEST(Simple, SingleThreaded) {
+  LockFreeSkipList skip_list;
+
+  skip_list.Add(3);
+  skip_list.Add(10);
+
+  EXPECT_TRUE(skip_list.Contains(3));
+  EXPECT_TRUE(skip_list.Contains(10));
+  EXPECT_FALSE(skip_list.Contains(5));
+
+  skip_list.Remove(3);
+  EXPECT_FALSE(skip_list.Contains(3));
+  EXPECT_TRUE(skip_list.Contains(10));
 }
 
-int main(int argc, char *argv[]) {
-  return RUN_TESTS(argc,argv);
+TEST(Complex, MultiThreaded) {
+  LockFreeSkipList skip_list;
+  pthread_t thread_one;
+  pthread_t thread_two;
+  Tester tester;
+
+  Callback<void, int, LockFreeSkipList*>* cb = 
+        makeCallableMany(&Tester::SkipListTester, &tester);
+
+  Callback<void>* cb_wrapper_one = 
+      makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
+                       cb,
+                       0, 
+                       &skip_list);
+
+  Callback<void>* cb_wrapper_two = 
+    makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
+                     cb,
+                     100, 
+                     &skip_list);
+
+  thread_one = makeThread(cb_wrapper_one);
+  thread_two = makeThread(cb_wrapper_two);
+
+  pthread_join(thread_one, NULL);
+  pthread_join(thread_two, NULL);
+ 
+  EXPECT_TRUE(skip_list.Contains(3));
+  EXPECT_TRUE(skip_list.Contains(10));
+  EXPECT_TRUE(skip_list.Contains(75));
+  EXPECT_TRUE(skip_list.Contains(108));
+  EXPECT_TRUE(skip_list.Contains(100));
+  EXPECT_TRUE(skip_list.Contains(175));
+  EXPECT_FALSE(skip_list.Contains(202));
+
+  delete cb;
+}
+
+}
+
+int main(int argc, char* argv[]) {
+  return RUN_TESTS(argc, argv);
 }

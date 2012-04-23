@@ -1,8 +1,0 @@
-#ifndef MCP_LOCK_FREE_HASH_TABE_HEADER
-#define MCP_LOCK_FREE_HASH_TABE_HEADER
-
-namespace lock_free {
-
-}
-
-#endif  // MCP_LOCK_FREE_HASH_TABE_HEADER
