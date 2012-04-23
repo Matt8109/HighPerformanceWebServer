@@ -294,15 +294,6 @@ def build(bld):
                     )
 
     bld.new_task_gen( features = 'cxx cprogram',
-                      source = 'lock_free_hash_table_test.cpp',
-                      includes = '.. .',
-                      uselib = '',
-                      uselib_local = 'concurrency',
-                      target = 'lock_free_hash_table_test',
-                      unit_test = 1
-                    )
-
-    bld.new_task_gen( features = 'cxx cprogram',
                       source = 'lock_free_skip_list_test.cpp',
                       includes = '.. .',
                       uselib = '',
