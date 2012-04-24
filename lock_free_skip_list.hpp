@@ -23,10 +23,9 @@ struct Node {
   Node(long v, int topLevel) 
     : key(v),
       topLayer(topLevel),
+      nexts(new Node*[topLevel]),
       marked(false),
       fullyLinked(false) {
-    nexts = new Node*[topLevel];
-
     for (int i = 0; i < topLevel; i++)
       nexts[i] = NULL;
   }

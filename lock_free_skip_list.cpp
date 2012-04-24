@@ -32,8 +32,8 @@ bool LockFreeSkipList::Add(long v) {
 
     int highestLocked = -1;
 
-    Node* pred;
-    Node* succ;
+    Node* pred = NULL;
+    Node* succ = NULL;
     Node* prevPred = NULL;
     bool valid = true;
 
@@ -78,7 +78,7 @@ bool LockFreeSkipList::Contains(long v) {
 
 bool LockFreeSkipList::OkToDelete(Node* candidate, int lFound) {
   return candidate->fullyLinked && candidate->topLayer == lFound 
-            && !candidate->marked;
+            && !(candidate->marked);
 }
 
 bool LockFreeSkipList::Remove(long v) { 
@@ -104,38 +104,38 @@ bool LockFreeSkipList::Remove(long v) {
 
         nodeToDelete->marked = true;
         isMarked = true;
-
-        int highestLocked = -1;
-
-        Node* pred;
-        Node* succ;
-        Node* prevPred = NULL;
-        bool valid = true;
-
-        for (int layer = 0; valid && layer <= topLayer; layer++) {
-          pred = preds[layer];
-          succ = succs[layer];
-
-          if (pred != prevPred) {
-            pred->lock.lock();
-            highestLocked = layer;
-            prevPred = pred;
-          }
-
-          valid = !(pred->marked) && pred->nexts[layer] == succ;
-        }
-
-        if (!valid)
-          continue;
-
-        for (int layer = topLayer; layer >= 0; layer --) {
-          preds[layer]->nexts[layer] = nodeToDelete->nexts[layer];
-        }
-
-        nodeToDelete->lock.unlock();
-        Unlock(preds, highestLocked);
-        return true;
       }
+
+      int highestLocked = -1;
+
+      Node* pred;
+      Node* succ;
+      Node* prevPred = NULL;
+      bool valid = true;
+
+      for (int layer = 0; valid && layer <= topLayer; layer++) {
+        pred = preds[layer];
+        succ = succs[layer];
+
+        if (pred != prevPred) {
+          pred->lock.lock();
+          highestLocked = layer;
+          prevPred = pred;
+        }
+
+        valid = !(pred->marked) && pred->nexts[layer] == succ;
+      }
+
+      if (!valid)
+        continue;
+
+      for (int layer = topLayer; layer >= 0; layer --) {
+        preds[layer]->nexts[layer] = nodeToDelete->nexts[layer];
+      }
+
+      nodeToDelete->lock.unlock();
+      Unlock(preds, highestLocked);
+      return true;
     } else {
       return false;
     }
