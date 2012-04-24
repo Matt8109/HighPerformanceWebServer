@@ -3,12 +3,14 @@
 
 #define MAX_HEIGHT 10
 
-#include <cstdlib>
+#include <iostream>
 #include <limits.h>
+#include <stdlib.h>
+#include <time.h>
 
-#include "spinlock.hpp"
+#include "lock.hpp"
 
-using base::Spinlock;
+using base::Mutex;
 
 namespace lock_free {
 
@@ -18,14 +20,16 @@ struct Node {
 	Node** nexts;
 	bool marked;
 	bool fullyLinked;
-	Spinlock lock;
+	Mutex lock;
 
   Node(long v, int topLevel) 
     : key(v),
       topLayer(topLevel),
-      nexts(new Node*[topLevel]),
       marked(false),
       fullyLinked(false) {
+
+    nexts = new Node*[topLevel];
+    
     for (int i = 0; i < topLevel; i++)
       nexts[i] = NULL;
   }
@@ -43,12 +47,14 @@ public:
   bool OkToDelete(Node* canidate, int lFound);
   bool Remove(long v);
   int FindNode(long v, Node** preds, Node** succs);
+  void PrintList();
 
 private:
   Node LSentinel;
   Node RSentinel;
 
   int RandomLevel(int max);                         // generate lvl 1-MAX_HEIGHT
+  void PrintList(Node* node, int level);            // prints a given list lvl
   void Unlock(Node** preds, int highestLocked);     // unlocks at every lvl used
 };
 

@@ -166,6 +166,7 @@ int LockFreeSkipList::FindNode(long v, Node** preds, Node** succs) {
 }
 
 int LockFreeSkipList::RandomLevel(int max) {
+  return 9;
   srand (time(NULL));              // randomize seed
   return rand() % MAX_HEIGHT;
 }
@@ -173,6 +174,24 @@ int LockFreeSkipList::RandomLevel(int max) {
 void LockFreeSkipList::Unlock(Node** preds, int highestLocked) {
   for (int i = 0; i <= highestLocked; i++)
     preds[i]->lock.unlock();
+}
+
+void LockFreeSkipList::PrintList() {
+  std::cout << std::endl;
+
+  for (int layer = MAX_HEIGHT - 1; layer >= 0; layer--) 
+    PrintList(&LSentinel, layer);
+
+  std::cout << std::endl;
+}
+
+void LockFreeSkipList::PrintList(Node* node, int level) {
+  std::cout << " - " << node->key;
+
+  if (node->nexts[level] == NULL)
+    std::cout << std::endl;
+  else
+    PrintList(node->nexts[level], level);
 }
 
 }

@@ -28,10 +28,23 @@ TEST(Simple, SingleThreaded) {
   skip_list.Add(10);
 
   EXPECT_TRUE(skip_list.Contains(3));
+
+  skip_list.PrintList();
+
   EXPECT_TRUE(skip_list.Contains(10));
+
+  skip_list.PrintList();
+
   EXPECT_FALSE(skip_list.Contains(5));
 
   skip_list.Remove(3);
+
+  skip_list.PrintList();
+
+  skip_list.Add(13);
+
+  skip_list.PrintList();
+
   EXPECT_FALSE(skip_list.Contains(3));
   EXPECT_TRUE(skip_list.Contains(10));
 }
@@ -40,6 +53,7 @@ TEST(Complex, MultiThreaded) {
   LockFreeSkipList skip_list;
   pthread_t thread_one;
   pthread_t thread_two;
+  pthread_t thread_three;
   Tester tester;
 
   Callback<void, int, LockFreeSkipList*>* cb = 
@@ -57,12 +71,20 @@ TEST(Complex, MultiThreaded) {
                      100, 
                      &skip_list);
 
+    Callback<void>* cb_wrapper_three = 
+    makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
+                     cb,
+                     200, 
+                     &skip_list);
+
   thread_one = makeThread(cb_wrapper_one);
   thread_two = makeThread(cb_wrapper_two);
+  thread_three = makeThread(cb_wrapper_three);
 
   pthread_join(thread_one, NULL);
   pthread_join(thread_two, NULL);
- 
+  pthread_join(thread_three, NULL);
+
   EXPECT_TRUE(skip_list.Contains(3));
   EXPECT_TRUE(skip_list.Contains(10));
   EXPECT_TRUE(skip_list.Contains(75));
