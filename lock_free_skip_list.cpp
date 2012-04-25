@@ -7,6 +7,8 @@ LockFreeSkipList::LockFreeSkipList()
       RSentinel(LONG_MAX, MAX_HEIGHT) { 
   for (int i = 0; i < MAX_HEIGHT; i++)            // init sentinels
     LSentinel.nexts[i] = &RSentinel;
+
+    srand (time(NULL));                           // randomize seed
 }
 
 LockFreeSkipList::~LockFreeSkipList() { }
@@ -23,7 +25,7 @@ bool LockFreeSkipList::Add(long v) {
       Node* nodeFound = succs[lFound];
 
       if (!nodeFound->marked) {
-        while (!nodeFound->fullyLinked);          // loop until consistent
+        while (!(nodeFound->fullyLinked)) { }          // loop until consistent
 
         return false;
       }
@@ -49,9 +51,11 @@ bool LockFreeSkipList::Add(long v) {
 
       valid = !(pred->marked) && !(succ->marked) && pred->nexts[layer] == succ;
 
-      if (!valid)
+      if (!valid) {
+        Unlock(preds, highestLocked); 
         continue;
-
+      }
+        
       Node* newNode = new Node(v, topLayer);
 
       for (int layer = 0; layer <= topLayer; layer++) {
@@ -126,9 +130,11 @@ bool LockFreeSkipList::Remove(long v) {
         valid = !(pred->marked) && pred->nexts[layer] == succ;
       }
 
-      if (!valid)
+      if (!valid) {
+        Unlock(preds, highestLocked); 
         continue;
-
+      }
+        
       for (int layer = topLayer; layer >= 0; layer --) {
         preds[layer]->nexts[layer] = nodeToDelete->nexts[layer];
       }
@@ -166,13 +172,13 @@ int LockFreeSkipList::FindNode(long v, Node** preds, Node** succs) {
 }
 
 int LockFreeSkipList::RandomLevel(int max) {
-  return 9;
-  srand (time(NULL));              // randomize seed
+ // return 9;
+
   return rand() % MAX_HEIGHT;
 }
 
 void LockFreeSkipList::Unlock(Node** preds, int highestLocked) {
-  for (int i = 0; i <= highestLocked; i++)
+  for (int i = highestLocked; i >= 0; i--)
     preds[i]->lock.unlock();
 }
 

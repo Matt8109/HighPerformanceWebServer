@@ -91,7 +91,8 @@ TEST(Complex, MultiThreaded) {
   EXPECT_TRUE(skip_list.Contains(108));
   EXPECT_TRUE(skip_list.Contains(100));
   EXPECT_TRUE(skip_list.Contains(175));
-  EXPECT_FALSE(skip_list.Contains(202));
+  EXPECT_TRUE(skip_list.Contains(275));
+  EXPECT_FALSE(skip_list.Contains(302));
 
   delete cb;
 }

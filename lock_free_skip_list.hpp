@@ -24,7 +24,7 @@ struct Node {
 
   Node(long v, int topLevel) 
     : key(v),
-      topLayer(topLevel),
+      topLayer(topLevel++),             // already 0 offset, so we want one more
       marked(false),
       fullyLinked(false) {
 
