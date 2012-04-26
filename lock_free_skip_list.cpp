@@ -141,6 +141,9 @@ bool LockFreeSkipList::Remove(long v) {
 
       nodeToDelete->lock.unlock();
       Unlock(preds, highestLocked);
+
+      delete nodeToDelete;
+      
       return true;
     } else {
       return false;
@@ -172,8 +175,6 @@ int LockFreeSkipList::FindNode(long v, Node** preds, Node** succs) {
 }
 
 int LockFreeSkipList::RandomLevel(int max) {
- // return 9;
-
   return rand() % MAX_HEIGHT;
 }
 

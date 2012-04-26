@@ -4,6 +4,7 @@
 
 #include "callback.hpp"
 #include "lock_free_skip_list.cpp"
+#include "op_generator.hpp"
 #include "test_unit.hpp"
 #include "thread.hpp"
 
@@ -11,13 +12,18 @@ using base::Callback;
 using base::makeCallableMany;
 using base::makeThread;
 using lock_free::LockFreeSkipList;
+using lock_free::OpGenerator;
 
 namespace {
 
 struct Tester {
-  void SkipListTester(int start, LockFreeSkipList* skip_list) {
+  void SkipListTesterBasic(int start, LockFreeSkipList* skip_list) {
     for (int i = start; i < start + LOOP_COUNT; i++)
       skip_list->Add(i);
+  }
+
+  void SkipListTesterOpGen(int* ops[], int op_count) {
+
   }
 };
 
@@ -28,28 +34,17 @@ TEST(Simple, SingleThreaded) {
   skip_list.Add(10);
 
   EXPECT_TRUE(skip_list.Contains(3));
-
-  skip_list.PrintList();
-
   EXPECT_TRUE(skip_list.Contains(10));
-
-  skip_list.PrintList();
-
   EXPECT_FALSE(skip_list.Contains(5));
 
   skip_list.Remove(3);
-
-  skip_list.PrintList();
-
   skip_list.Add(13);
-
-  skip_list.PrintList();
 
   EXPECT_FALSE(skip_list.Contains(3));
   EXPECT_TRUE(skip_list.Contains(10));
 }
 
-TEST(Complex, MultiThreaded) {
+TEST(Complex, MultiThreadedLinear) {
   LockFreeSkipList skip_list;
   pthread_t thread_one;
   pthread_t thread_two;
@@ -57,7 +52,7 @@ TEST(Complex, MultiThreaded) {
   Tester tester;
 
   Callback<void, int, LockFreeSkipList*>* cb = 
-        makeCallableMany(&Tester::SkipListTester, &tester);
+        makeCallableMany(&Tester::SkipListTesterBasic, &tester);
 
   Callback<void>* cb_wrapper_one = 
       makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
@@ -95,6 +90,20 @@ TEST(Complex, MultiThreaded) {
   EXPECT_FALSE(skip_list.Contains(302));
 
   delete cb;
+}
+
+TEST(Complex, MultiThreadedMixed) {
+  LockFreeSkipList skip_list;
+  pthread_t thread_one;
+  pthread_t thread_two;
+  Tester tester;
+
+  int ops_one[200];
+  int ops_two[200];
+
+
+
+
 }
 
 }
