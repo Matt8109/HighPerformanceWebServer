@@ -92,19 +92,19 @@ TEST(Complex, MultiThreadedLinear) {
   delete cb;
 }
 
-TEST(Complex, MultiThreadedMixed) {
-  LockFreeSkipList skip_list;
-  pthread_t thread_one;
-  pthread_t thread_two;
-  Tester tester;
+// TEST(Complex, MultiThreadedMixed) {
+//   LockFreeSkipList skip_list;
+//   pthread_t thread_one;
+//   pthread_t thread_two;
+//   Tester tester;
 
-  int ops_one[200];
-  int ops_two[200];
-
-
+//   int ops_one[200];
+//   int ops_two[200];
 
 
-}
+
+
+// }
 
 }
 
