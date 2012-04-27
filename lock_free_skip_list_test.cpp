@@ -32,6 +32,11 @@ struct Tester {
     for (int i = start; i < start + LOOP_COUNT; i++)
       list_->Add(ops[i]);
   }
+
+  void SkipListTesterRandomDelete(int start, int* ops) {
+    for (int i = start; i < start + LOOP_COUNT; i++)
+      list_->Remove(ops[i]);
+  }
 };
 
 TEST(Simple, SingleThreaded) {
@@ -107,6 +112,43 @@ TEST(Complex, MultiThreadMixChanges) {
 
   for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)
     EXPECT_TRUE(skip_list.Contains(i));
+
+  delete cb;
+}
+
+// check we can process simultaneous deletes
+TEST(Complex, MultiThreadMixDeletes) {
+  LockFreeSkipList skip_list;
+  pthread_t threads[THREAD_COUNT];
+  Tester tester(&skip_list);
+
+  int values[LOOP_COUNT * THREAD_COUNT];
+
+  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++) {
+    skip_list.Add(i);
+    values[i] = i;
+  }
+
+  random_shuffle(values, values + LOOP_COUNT * THREAD_COUNT);
+
+  Callback<void, int, int*>* cb = 
+        makeCallableMany(&Tester::SkipListTesterRandomDelete, &tester);
+
+  for (int i = 0; i < THREAD_COUNT; i++) {
+    Callback<void>* cb_wrapper = 
+        makeCallableOnce(&Callback<void, int, int*>::operator(), 
+                         cb,
+                         i * LOOP_COUNT,
+                         values);
+
+    threads[i] = makeThread(cb_wrapper);
+  }
+
+  for (int i = 0; i < THREAD_COUNT; i++)
+    pthread_join(threads[i], NULL);
+
+  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)  // make sure everything
+    EXPECT_FALSE(skip_list.Contains(i));               // was removed
 
   delete cb;
 }
