@@ -1,10 +1,11 @@
 #define LOOP_COUNT 100
+#define THREAD_COUNT 5
 
-#include <pthread.h>  // barriers
+#include <algorithm>
+#include <pthread.h>
 
 #include "callback.hpp"
 #include "lock_free_skip_list.cpp"
-#include "op_generator.hpp"
 #include "test_unit.hpp"
 #include "thread.hpp"
 
@@ -12,18 +13,25 @@ using base::Callback;
 using base::makeCallableMany;
 using base::makeThread;
 using lock_free::LockFreeSkipList;
-using lock_free::OpGenerator;
+using std::random_shuffle;
 
 namespace {
 
 struct Tester {
-  void SkipListTesterBasic(int start, LockFreeSkipList* skip_list) {
+  LockFreeSkipList* list_;
+
+  Tester(LockFreeSkipList* skip_list) : list_(skip_list) { }
+  ~Tester() { }
+
+  void SkipListTesterBasic(int start) {
     for (int i = start; i < start + LOOP_COUNT; i++)
-      skip_list->Add(i);
+      list_->Add(i);
   }
 
-  void SkipListTesterOpGen(int* ops[], int op_count) {
-
+  void SkipListTesterRandom(int start, int* ops) {
+    //std::cout << "Printing " << start << " - " << start + LOOP_COUNT << std::endl << std::flush;
+    for (int i = start; i < start + LOOP_COUNT; i++)
+      list_->Add(ops[i]);
   }
 };
 
@@ -49,28 +57,25 @@ TEST(Complex, MultiThreadedLinear) {
   pthread_t thread_one;
   pthread_t thread_two;
   pthread_t thread_three;
-  Tester tester;
+  Tester tester(&skip_list);
 
-  Callback<void, int, LockFreeSkipList*>* cb = 
+  Callback<void, int>* cb = 
         makeCallableMany(&Tester::SkipListTesterBasic, &tester);
 
   Callback<void>* cb_wrapper_one = 
-      makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
+      makeCallableOnce(&Callback<void, int>::operator(), 
                        cb,
-                       0, 
-                       &skip_list);
+                       0);
 
   Callback<void>* cb_wrapper_two = 
-    makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
+    makeCallableOnce(&Callback<void, int>::operator(), 
                      cb,
-                     100, 
-                     &skip_list);
+                     100);
 
     Callback<void>* cb_wrapper_three = 
-    makeCallableOnce(&Callback<void, int, LockFreeSkipList*>::operator(), 
+    makeCallableOnce(&Callback<void, int>::operator(), 
                      cb,
-                     200, 
-                     &skip_list);
+                     200);
 
   thread_one = makeThread(cb_wrapper_one);
   thread_two = makeThread(cb_wrapper_two);
@@ -92,21 +97,45 @@ TEST(Complex, MultiThreadedLinear) {
   delete cb;
 }
 
-// TEST(Complex, MultiThreadedMixed) {
-//   LockFreeSkipList skip_list;
-//   pthread_t thread_one;
-//   pthread_t thread_two;
-//   Tester tester;
+TEST(Complex, MultiThreadMixDuplicates) {
+  LockFreeSkipList skip_list;
+  pthread_t threads[THREAD_COUNT];
+  Tester tester(&skip_list);
 
-//   int ops_one[200];
-//   int ops_two[200];
+  int values[LOOP_COUNT * THREAD_COUNT];
 
+  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)
+    values[i] = i;
 
+  random_shuffle(values, values + LOOP_COUNT * THREAD_COUNT);
 
+  Callback<void, int, int*>* cb = 
+        makeCallableMany(&Tester::SkipListTesterRandom, &tester);
 
-// }
+  for (int i = 0; i < THREAD_COUNT; i++) {
+    Callback<void>* cb_wrapper = 
+        makeCallableOnce(&Callback<void, int, int*>::operator(), 
+                         cb,
+                         i * LOOP_COUNT,
+                         values);
 
+    threads[i] = makeThread(cb_wrapper);
+  }
+
+  for (int i = 0; i < THREAD_COUNT; i++)
+    pthread_join(threads[i], NULL);
+
+  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++) {
+    EXPECT_TRUE(skip_list.Contains(i));
+
+    if (!skip_list.Contains(i))
+      std::cout << i << std::endl;
+  }
+
+  delete cb;
 }
+
+} // unamed namespace
 
 int main(int argc, char* argv[]) {
   return RUN_TESTS(argc, argv);

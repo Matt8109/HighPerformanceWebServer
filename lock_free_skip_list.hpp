@@ -18,9 +18,9 @@ struct Node {
 	long key;
 	int topLayer;
 	Node** nexts;
-	bool marked;
-	bool fullyLinked;
-	Mutex lock;
+	volatile bool marked;
+	volatile bool fullyLinked;
+	mutable Mutex lock;
 
   Node(long v, int topLevel) 
     : key(v),
