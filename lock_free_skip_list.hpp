@@ -35,6 +35,11 @@ struct Node {
   }
 };
 
+// This class is not actually lock free. It was named such only to match the
+// standard set up the hash table and that which is included in the lab 5 guide
+// It is an implementation of the skip list described by Herlihy, Lev, Luchangco 
+// and Shavit in the paper we read for class
+
 class LockFreeSkipList {
 public:
   explicit LockFreeSkipList();
