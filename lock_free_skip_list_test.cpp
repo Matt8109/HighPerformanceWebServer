@@ -29,7 +29,6 @@ struct Tester {
   }
 
   void SkipListTesterRandom(int start, int* ops) {
-    //std::cout << "Printing " << start << " - " << start + LOOP_COUNT << std::endl << std::flush;
     for (int i = start; i < start + LOOP_COUNT; i++)
       list_->Add(ops[i]);
   }
@@ -54,50 +53,31 @@ TEST(Simple, SingleThreaded) {
 
 TEST(Complex, MultiThreadedLinear) {
   LockFreeSkipList skip_list;
-  pthread_t thread_one;
-  pthread_t thread_two;
-  pthread_t thread_three;
+  pthread_t threads[THREAD_COUNT];
   Tester tester(&skip_list);
 
   Callback<void, int>* cb = 
         makeCallableMany(&Tester::SkipListTesterBasic, &tester);
 
-  Callback<void>* cb_wrapper_one = 
-      makeCallableOnce(&Callback<void, int>::operator(), 
-                       cb,
-                       0);
+  for (int i = 0; i < THREAD_COUNT; i++) {
+    Callback<void>* cb_wrapper = 
+        makeCallableOnce(&Callback<void, int>::operator(), 
+                         cb,
+                         i * LOOP_COUNT);
 
-  Callback<void>* cb_wrapper_two = 
-    makeCallableOnce(&Callback<void, int>::operator(), 
-                     cb,
-                     100);
+    threads[i] = makeThread(cb_wrapper);
+  }
 
-    Callback<void>* cb_wrapper_three = 
-    makeCallableOnce(&Callback<void, int>::operator(), 
-                     cb,
-                     200);
+  for (int i = 0; i < THREAD_COUNT; i++)
+    pthread_join(threads[i], NULL);
 
-  thread_one = makeThread(cb_wrapper_one);
-  thread_two = makeThread(cb_wrapper_two);
-  thread_three = makeThread(cb_wrapper_three);
-
-  pthread_join(thread_one, NULL);
-  pthread_join(thread_two, NULL);
-  pthread_join(thread_three, NULL);
-
-  EXPECT_TRUE(skip_list.Contains(3));
-  EXPECT_TRUE(skip_list.Contains(10));
-  EXPECT_TRUE(skip_list.Contains(75));
-  EXPECT_TRUE(skip_list.Contains(108));
-  EXPECT_TRUE(skip_list.Contains(100));
-  EXPECT_TRUE(skip_list.Contains(175));
-  EXPECT_TRUE(skip_list.Contains(275));
-  EXPECT_FALSE(skip_list.Contains(302));
+  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)
+    EXPECT_TRUE(skip_list.Contains(i));
 
   delete cb;
 }
 
-TEST(Complex, MultiThreadMixDuplicates) {
+TEST(Complex, MultiThreadMixChanges) {
   LockFreeSkipList skip_list;
   pthread_t threads[THREAD_COUNT];
   Tester tester(&skip_list);
@@ -125,12 +105,8 @@ TEST(Complex, MultiThreadMixDuplicates) {
   for (int i = 0; i < THREAD_COUNT; i++)
     pthread_join(threads[i], NULL);
 
-  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++) {
+  for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)
     EXPECT_TRUE(skip_list.Contains(i));
-
-    if (!skip_list.Contains(i))
-      std::cout << i << std::endl;
-  }
 
   delete cb;
 }
