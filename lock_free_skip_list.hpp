@@ -15,12 +15,12 @@ using base::Mutex;
 namespace lock_free {
 
 struct Node {
-	long key;
-	int topLayer;
-	Node** nexts;
-	volatile bool marked;
-	volatile bool fullyLinked;
-	mutable Mutex lock;
+  long key;
+  int topLayer;
+  Node** nexts;
+  volatile bool marked;
+  volatile bool fullyLinked;
+  mutable Mutex lock;
 
   Node(long v, int topLevel) 
     : key(v),
