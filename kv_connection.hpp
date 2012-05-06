@@ -1,17 +1,48 @@
 #ifndef MCP_KV_CONNECTION_HEADER
 #define MCP_KV_CONNECTION_HEADER
 
+#include <queue>
+#include <string>
+
+#include "callback.hpp"
 #include "connection.hpp"
+#include "http_request.hpp"
+#include "http_response.hpp"
 #include "kv_service.hpp"
+#include "lock.hpp"
 
 namespace kv {
+
+using base::Mutex;
+using base::Notification;
+using http::Request;
+using http::Response;
+using std::queue;
+using std::string;
+
+
+// This class handles the server side of an KV connection -- a very
+// rudimentary set of KV, as of now. It can handle a GET request for
+// a given document and it can react to a special 'quit' request. The
+// latter will shutdown the KV server this connection belongs to.
+//
+// Thread safety:
+//
+//   This class is not thread safe. It assumes that readDone would not
+//   be called concurrently. That's the expected behavior from
+//   Connection. Still, readDone may want to write to its out_ buffer
+//   while that buffer is being read from by the io_manager machinery
+//   (e.g., reading data to be sent out). So your code should only
+//   touch that with m_write_ locked.
+//
 
 class KVServerConnection : public base::Connection {
 public:
   KVServerConnection(KVService* service, int client_fd);
 
 private:
-  KVService* my_service_;
+  Request      request_;
+  KVService*   my_service_;  // not owned here
 
   // base::Connection is ref counted. Use release() to
   // delete. Normally, you won't need to because the io_manager will
@@ -22,37 +53,83 @@ private:
   // generates responses for each of them.
   virtual bool readDone();
 
-  // Non-copyable, non-assignalble
-  KVServerConnection(const KVServerConnection&);
-  KVServerConnection& operator=(const KVServerConnection&);
+  // Processes 'request', be it an internal command such as '/quit' or
+  // '/stats' and returns true if more request should be accepted in
+  // this connection.
+  //
+  // TODO
+  // The command handlers are hardcoded here. Ideally, we should
+  // register them with the server itself and we'd look them up here.
+  // see TODO in Server class
+  bool handleRequest(Request* request);
+
+  // Non-copyable, non-assignable
+  KVServerConnection(KVServerConnection&);
+  KVServerConnection& operator=(KVServerConnection&);
 };
 
+// This class handles the client-side of an KV connection. It is
+// built so that it can connect to an KV server and send requests
+// and get responses in a non-blocking way.
+//
+// Thread Safety:
+//
+//   The class is safe in that sendRequests() may be issued
+//   concurrently. connect() should be issued only once, though.
 class KVClientConnection : public base::Connection {
 public:
-  KVClientConnection(KVService* service);
+  // Copies 'request' into the connection output buffer and schedules
+  // a write. Enqueues 'cb' for when a reponse arrives.
+  void asyncSend(Request* request, ResponseCallback* cb);
+
+  // Issues 'request' and blocks until 'response' arrives. This is the
+  // synchronous version of send.
+  void send(Request* request, Response** response);
 
 private:
-  KVService* my_service_;
+  friend class KVService;
+  KVService*             my_service_;
 
-  // base::Connection is ref counted so the destructor shoudn't be
-  // issued directly. The connection would get deleted if 'connDone()'
-  // below doesn't start reading or if 'readDone()' returns false (to
-  // stop reading).
-  virtual ~KVClientConnection() {}
+  // The connect callback is always issued, independently of the
+  // result of the connect itself. 'connect_cb_' would thus self
+  // delete if it is a once only callback.
+  ConnectCallback*         connect_cb_;
+
+  Mutex                    m_response_;    // protects the queue below
+  queue<ResponseCallback*> response_cbs_;  // owned here
+
+  explicit KVClientConnection(KVService* service);
+
+  // base::Connection is reference counted so the destructor shouldn't
+  // be issued directly. The connection would get deleted if
+  // 'connDone()' below doesn't start reading or if 'readDone()'
+  // returns false (to stop reading).
+  virtual ~KVClientConnection() { }
+
+  // Tries to connect with a server sitting on 'host:port' and issue
+  // 'cb' with the resulting attempt.
+  void connect(const string& host, int port, ConnectCallback* cb);
 
   // If the connect request went through, start reading from the
-  // connection. In any case, issue the callback that was registered.
+  // connection. In any case, issue the callback that was registered
+  // in the 'connect()' call.
   virtual void connDone();
 
   // Parses as many responses as there are in the input buffer for
   // this connection and issues one callback per parsed response.
   virtual bool readDone();
+  bool handleResponse(Response* response);
 
-  // Non-copyable, non-assignalble
-  KVClientConnection(const KVClientConnection&);
-  KVClientConnection& operator=(const KVClientConnection&);
+  // Completion call used in sync receive().
+  void receiveInternal(Notification* n,
+                       Response** user_response,
+                       Response* new_response);
+
+  // Non-copyable, non-assignable
+  KVClientConnection(KVClientConnection&);
+  KVClientConnection& operator=(KVClientConnection&);
 };
 
-} // namespace kv
+}  // namespace kv
 
 #endif // MCP_KV_CONNECTION_HEADER

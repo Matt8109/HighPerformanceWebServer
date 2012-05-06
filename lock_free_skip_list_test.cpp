@@ -5,7 +5,7 @@
 #include <pthread.h>
 
 #include "callback.hpp"
-#include "lock_free_skip_list.cpp"
+#include "lock_free_skip_list.hpp"
 #include "test_unit.hpp"
 #include "thread.hpp"
 
