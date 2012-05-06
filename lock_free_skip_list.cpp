@@ -2,24 +2,27 @@
 
 namespace lock_free {
 
-LockFreeSkipList::LockFreeSkipList() 
-    : LSentinel(LONG_MIN, MAX_HEIGHT),
-      RSentinel(LONG_MAX, MAX_HEIGHT) { 
+template <class T>
+LockFreeSkipList<T>::LockFreeSkipList() 
+    : LSentinel(LONG_MIN, 0, MAX_HEIGHT),
+      RSentinel(LONG_MAX, 0, MAX_HEIGHT) { 
   for (int i = 0; i < MAX_HEIGHT; i++)            // init sentinels
     LSentinel.nexts[i] = &RSentinel;
 
     srand (time(NULL));                           // randomize seed
 }
 
-LockFreeSkipList::~LockFreeSkipList() { }
+template<typename T>
+LockFreeSkipList<T>::~LockFreeSkipList() { }
 
-bool LockFreeSkipList::Add(long v) {
-  int topLayer = RandomLevel(MAX_HEIGHT);
+template<typename T>
+bool LockFreeSkipList<T>::add(long v, T data) {
+  int topLayer = randomLevel(MAX_HEIGHT);
   Node* preds[MAX_HEIGHT];
   Node* succs[MAX_HEIGHT];
 
   while (true) {
-    int lFound = FindNode(v, preds, succs);
+    int lFound = findNode(v, preds, succs);
 
     if (lFound != -1) {
       Node* nodeFound = succs[lFound];
@@ -52,11 +55,11 @@ bool LockFreeSkipList::Add(long v) {
       valid = !(pred->marked) && !(succ->marked) && pred->nexts[layer] == succ;
 
       if (!valid) {
-        Unlock(preds, highestLocked); 
+        unlock(preds, highestLocked); 
         continue;
       }
         
-      Node* newNode = new Node(v, topLayer);
+      Node* newNode = new Node(v, data, topLayer);
 
       for (int layer = 0; layer <= topLayer; layer++) {
         newNode->nexts[layer] = succs[layer];
@@ -64,28 +67,53 @@ bool LockFreeSkipList::Add(long v) {
       }
 
       newNode->fullyLinked = true;
-      Unlock(preds, highestLocked);
+      unlock(preds, highestLocked);
       return true;
     }
   }
 }
 
-bool LockFreeSkipList::Contains(long v) {
+template<typename T>
+bool LockFreeSkipList<T>::contains(long v) {
   Node* preds[MAX_HEIGHT];
   Node* succs[MAX_HEIGHT];
 
-  int lFound = FindNode(v, preds, succs);
+  int lFound = findNode(v, preds, succs);
 
   return lFound != -1 && succs[lFound]->fullyLinked 
            && !(succs[lFound]->marked);
 }
 
-bool LockFreeSkipList::OkToDelete(Node* candidate, int lFound) {
+template<typename T>
+T LockFreeSkipList<T>::get(long v) {
+
+  int lFound = -1;
+  Node* pred = &LSentinel;
+
+  for (int layer = MAX_HEIGHT - 1; layer >= 0; layer--) {
+    Node* curr = pred->nexts[layer];
+
+    while (v > curr->key) {
+      pred = curr;
+      curr = pred->nexts[layer];
+    }
+
+    if (lFound == -1 && v == curr->key) {
+      return curr->value;
+    }
+  }
+
+  return 0;    // didnt find what we were looking for
+}
+
+template<typename T>
+bool LockFreeSkipList<T>::okToDelete(Node* candidate, int lFound) {
   return candidate->fullyLinked && candidate->topLayer == lFound 
             && !(candidate->marked);
 }
 
-bool LockFreeSkipList::Remove(long v) { 
+template<typename T>
+bool LockFreeSkipList<T>::remove(long v) { 
   Node* nodeToDelete = NULL;
   bool isMarked = false;
   int topLayer = -1;
@@ -93,9 +121,9 @@ bool LockFreeSkipList::Remove(long v) {
   Node* succs[MAX_HEIGHT];
 
   while (true) {
-    int lFound = FindNode(v, preds, succs);
+    int lFound = findNode(v, preds, succs);
 
-    if (isMarked || (lFound != -1 && OkToDelete(succs[lFound], lFound))) {
+    if (isMarked || (lFound != -1 && okToDelete(succs[lFound], lFound))) {
       if (!isMarked) {
         nodeToDelete = succs[lFound];
         topLayer = nodeToDelete->topLayer;
@@ -131,7 +159,7 @@ bool LockFreeSkipList::Remove(long v) {
       }
 
       if (!valid) {
-        Unlock(preds, highestLocked); 
+        unlock(preds, highestLocked); 
         continue;
       }
         
@@ -140,7 +168,7 @@ bool LockFreeSkipList::Remove(long v) {
       }
 
       nodeToDelete->lock.unlock();
-      Unlock(preds, highestLocked);
+      unlock(preds, highestLocked);
 
       delete nodeToDelete;
       
@@ -151,7 +179,8 @@ bool LockFreeSkipList::Remove(long v) {
   }
 }
 
-int LockFreeSkipList::FindNode(long v, Node** preds, Node** succs) {
+template<typename T>
+int LockFreeSkipList<T>::findNode(long v, Node** preds, Node** succs) {
   int lFound = -1;
   Node* pred = &LSentinel;
 
@@ -174,31 +203,35 @@ int LockFreeSkipList::FindNode(long v, Node** preds, Node** succs) {
   return lFound;
 }
 
-int LockFreeSkipList::RandomLevel(int max) {
+template<typename T>
+int LockFreeSkipList<T>::randomLevel(int max) {
   return rand() % MAX_HEIGHT;
 }
 
-void LockFreeSkipList::Unlock(Node** preds, int highestLocked) {
+template <class T>
+void LockFreeSkipList<T>::unlock(Node** preds, int highestLocked) {
   for (int i = highestLocked; i >= 0; i--)
     preds[i]->lock.unlock();
 }
 
-void LockFreeSkipList::PrintList() {
+template<typename T>
+void LockFreeSkipList<T>::printList() {
   std::cout << std::endl;
 
   for (int layer = MAX_HEIGHT - 1; layer >= 0; layer--) 
-    PrintList(&LSentinel, layer);
+    printList(&LSentinel, layer);
 
   std::cout << std::endl;
 }
 
-void LockFreeSkipList::PrintList(Node* node, int level) {
+template <class T>
+void LockFreeSkipList<T>::printList(Node* node, int level) {
   std::cout << " - " << node->key;
 
   if (node->nexts[level] == NULL)
     std::cout << std::endl;
   else
-    PrintList(node->nexts[level], level);
+    printList(node->nexts[level], level);
 }
 
-}
+} // namespace lock_free

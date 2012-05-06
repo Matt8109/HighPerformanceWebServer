@@ -18,46 +18,50 @@ using std::random_shuffle;
 namespace {
 
 struct Tester {
-  LockFreeSkipList* list_;
+  LockFreeSkipList<int>* list_;
 
-  Tester(LockFreeSkipList* skip_list) : list_(skip_list) { }
+  Tester(LockFreeSkipList<int>* skip_list) : list_(skip_list) { }
   ~Tester() { }
 
   void SkipListTesterBasic(int start) {
     for (int i = start; i < start + LOOP_COUNT; i++)
-      list_->Add(i);
+      list_->add(i, 1);
   }
 
   void SkipListTesterRandom(int start, int* ops) {
     for (int i = start; i < start + LOOP_COUNT; i++)
-      list_->Add(ops[i]);
+      list_->add(ops[i], 0);
   }
 
   void SkipListTesterRandomDelete(int start, int* ops) {
     for (int i = start; i < start + LOOP_COUNT; i++)
-      list_->Remove(ops[i]);
+      list_->remove(ops[i]);
   }
 };
 
 TEST(Simple, SingleThreaded) {
-  LockFreeSkipList skip_list;
+  LockFreeSkipList<int> skip_list;
 
-  skip_list.Add(3);
-  skip_list.Add(10);
+  skip_list.add(3, 5);
+  skip_list.add(10, 0);
 
-  EXPECT_TRUE(skip_list.Contains(3));
-  EXPECT_TRUE(skip_list.Contains(10));
-  EXPECT_FALSE(skip_list.Contains(5));
+  EXPECT_TRUE(skip_list.contains(3));
+  EXPECT_TRUE(skip_list.contains(10));
+  EXPECT_FALSE(skip_list.contains(5));
 
-  skip_list.Remove(3);
-  skip_list.Add(13);
+  EXPECT_EQ(skip_list.get(3), 5);
 
-  EXPECT_FALSE(skip_list.Contains(3));
-  EXPECT_TRUE(skip_list.Contains(10));
+  skip_list.remove(3);
+  EXPECT_EQ(skip_list.get(3), 0);
+
+  skip_list.add(13, 0);
+
+  EXPECT_FALSE(skip_list.contains(3));
+  EXPECT_TRUE(skip_list.contains(10));
 }
 
 TEST(Complex, MultiThreadedLinear) {
-  LockFreeSkipList skip_list;
+  LockFreeSkipList<int> skip_list;
   pthread_t threads[THREAD_COUNT];
   Tester tester(&skip_list);
 
@@ -77,13 +81,13 @@ TEST(Complex, MultiThreadedLinear) {
     pthread_join(threads[i], NULL);
 
   for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)
-    EXPECT_TRUE(skip_list.Contains(i));
+    EXPECT_TRUE(skip_list.contains(i));
 
   delete cb;
 }
 
 TEST(Complex, MultiThreadMixChanges) {
-  LockFreeSkipList skip_list;
+  LockFreeSkipList<int> skip_list;
   pthread_t threads[THREAD_COUNT];
   Tester tester(&skip_list);
 
@@ -111,21 +115,21 @@ TEST(Complex, MultiThreadMixChanges) {
     pthread_join(threads[i], NULL);
 
   for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)
-    EXPECT_TRUE(skip_list.Contains(i));
+    EXPECT_TRUE(skip_list.contains(i));
 
   delete cb;
 }
 
 // check we can process simultaneous deletes
 TEST(Complex, MultiThreadMixDeletes) {
-  LockFreeSkipList skip_list;
+  LockFreeSkipList<int> skip_list;
   pthread_t threads[THREAD_COUNT];
   Tester tester(&skip_list);
 
   int values[LOOP_COUNT * THREAD_COUNT];
 
   for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++) {
-    skip_list.Add(i);
+    skip_list.add(i, 0);
     values[i] = i;
   }
 
@@ -148,7 +152,7 @@ TEST(Complex, MultiThreadMixDeletes) {
     pthread_join(threads[i], NULL);
 
   for (int i = 0; i < LOOP_COUNT * THREAD_COUNT; i++)  // make sure everything
-    EXPECT_FALSE(skip_list.Contains(i));               // was removed
+    EXPECT_FALSE(skip_list.contains(i));               // was removed
 
   delete cb;
 }
