@@ -1,13 +1,15 @@
+#include <cctype>   // isdigit
 #include <fcntl.h>    // O_RDONLY
+#include <sstream>
 #include <stdio.h>    // perror
 #include <stdlib.h>   // exit
-#include <sstream>
 #include <sys/stat.h> // fstat
 #include <unistd.h>   // read, write, close
 
 #include "buffer.hpp"
-#include "kv_connection.hpp"
+#include "fibonacci.hpp"
 #include "http_parser.hpp"
+#include "kv_connection.hpp"
 #include "logging.hpp"
 #include "request_stats.hpp"
 #include "thread_pool_fast.hpp"
@@ -66,63 +68,57 @@ bool KVServerConnection::handleRequest(Request* request) {
     request_.address = "index.html";
   }
 
-  // Grab from or load the file to the cache.
-  Buffer* buf;
-  int error;
+  Buffer buf;
+  string output = "Numbers only please.";
 
-  if (true) {
-    m_write_.lock();
+  // handle the request
+  std::istringstream request_string(request_.address);
+  int input = 0;
+  if (request_string >> input)
+  {
+    int result = 0;
+    long request_value = atoi(request_.address.c_str());
 
-    out_.write("KV/1.1 200 OK\r\n");
-    out_.write("Date: Wed, 28 Oct 2009 15:24:11 GMT\r\n");
-    out_.write("Server: Lab02a\r\n");
-    out_.write("Accept-Ranges: bytes\r\n");
+    if (request_value > 46) {
+      output = "Numbers under 47 only please. We wouldn't want an overflow.";
+    } else if (request_value < 0) {
+      output = "Now that's just rude.";
+    } else {
+      if (my_service_->kv_store.contains(request_value))
+       result = my_service_->kv_store.get(request_value);
+      else {
+        result = base::Fibonacci(request_value);
+        my_service_->kv_store.add(request_value, result);
+      }
 
-    ostringstream os;
-    os << "Content-Length: " << buf->readSize() << "\r\n";
-    out_.write(os.str().c_str());
-    out_.write("Content-Type: text/html\r\n");
-    out_.write("\r\n");
-
-
-
-    m_write_.unlock();
-
-  } else {
-
-    // TODO
-    //
-    // differentiate between a server internal error (ie too many
-    // sockets open), which should return a 500 and a file not found,
-    // which should return a 404.
-    perror("Can't serve request");
-
-    m_write_.lock();
-
-    ostringstream html_stream;
-    html_stream <<"<HTML>\r\n";
-    html_stream <<"<HEAD><TITLE>400 Bad Request</TITLE></HEAD>\r\n";
-    html_stream <<"<BODY>Bad Request</BODY>\r\n";
-    html_stream <<"</HTML>\r\n";
-    html_stream <<"\r\n";
-
-    ostringstream os;
-    os << "Content-Length: " << html_stream.str().size() << "\r\n";
-
-    out_.write("KV/1.1 503 Bad Request\r\n");
-    out_.write("Date: Wed, 28 Oct 2009 15:24:11 GMT\r\n");
-    out_.write("Server: MyServer\r\n");
-    out_.write("Connection: close\r\n");
-    out_.write("Transfer-Encoding: chunked\r\n");
-    out_.write(os.str().c_str());
-    out_.write("Content-Type: text/html; charset=iso-8859-1\r\n");
-    out_.write("\r\n");
-
-    out_.write(html_stream.str().c_str());
-
-    m_write_.unlock();
-
+      std::stringstream convt;
+      convt << result;
+      output = convt.str();
+    }
   }
+  else
+  {
+    output = "I print out and cache a slow Fibonacci function. Please enter a "
+              "key under 47. Numbers only. Notice the higher numbers get "
+              "cached and returned qicker.";
+  }
+
+  m_write_.lock();
+  
+  out_.write("HTTP/1.0 200 OK\r\n"); // http so the browser would print it
+  out_.write("Date: Wed, 28 Oct 2009 15:24:11 GMT\r\n");
+  out_.write("Server: Lab02a\r\n");
+  out_.write("Accept-Ranges: bytes\r\n");
+
+  ostringstream os;
+  os << "Content-Length: " << output.size() << "\r\n";
+  out_.write(os.str().c_str());
+  out_.write("Content-Type: text/html\r\n");
+  out_.write("\r\n");
+
+  out_.write(output.c_str());
+
+  m_write_.unlock();
 
   startWrite();
   return true;

@@ -21,6 +21,10 @@ KVService::KVService(int port, ServiceManager* service_manager)
 KVService::~KVService() {
 }
 
+void KVService::stop() { 
+  service_manager_->stop();
+}
+
 void KVService::acceptConnection(int client_fd) {
   if (service_manager_->stopped()) {
     return;
@@ -66,10 +70,6 @@ void KVService::connectInternal(Notification* n,
                                   KVClientConnection* new_conn) {
   *user_conn = new_conn;
   n->notify();
-}
-
-void KVService::stop() { 
-  service_manager_->stop();
 }
 
 } // namespace kv
