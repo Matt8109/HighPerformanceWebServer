@@ -62,12 +62,14 @@ struct Tester {
     convt << key;
     key_string = convt.str();
 
-    Request req1;
-    Response *resp1;
-    req1.method = "GET";
-    req1.address = "/" + key_string;
-    req1.version = "HTTP/1.1";
-    c1->send(&req1, &resp1);
+    Request request;
+    Response* response;
+    request.method = "GET";
+    request.address = "/" + key_string;
+    request.version = "HTTP/1.1";
+    c1->send(&request, &response);
+
+    delete response;
   }
 
   void testMethod(int start, int* ops, int loop_count) {
@@ -87,15 +89,9 @@ struct Tester {
     return array;
   }
 
-  void printTimers() {
-    
-  }
-
   Timer* runTests(int thread_count, int loop_count, bool in_order, int max) {
-    Tester tester();
     Timer* timer = new Timer();
     queue<pthread_t> threads;
-    Callback<void>* cb_wrapper;
     int* values = createOperations(loop_count * thread_count, in_order, max);
 
     timer->start();
@@ -107,7 +103,7 @@ struct Tester {
       Callback<void>* cb_wrapper = 
           makeCallableOnce(&Callback<void, int, int*, int>::operator(), 
                            cb,
-                           i * loop_count,
+                           loop_count / thread_count,
                            values,
                            loop_count);
 
@@ -152,8 +148,35 @@ struct Tester {
 
 } // unamed namespace
 
-int main(int argc, char* argv[]) {
+void starter(int thread_one_count, 
+                   int thread_two_count, 
+                   int thread_three_count,
+                   int loop_count,
+                   bool in_order,
+                   int max) {
   Tester test;
-  test.testStarter(1, 2, 4, 100, false, 20);
- // test.connect(4);
+  test.testStarter(2, 4, 10, 500, false, 30);
+}
+
+int main(int argc, char* argv[]) {
+  cout << endl << "Starting benchmark, measuring 2, 4 and 6 threads." << endl;
+
+  cout << endl << "Testing in-order insertions, with a high collision rate." 
+       << endl;
+  starter(2, 4, 6, 200, true, 10);
+
+  cout << endl << endl 
+       << "Testing in-order insersions, with a low collisions rate."
+       << endl;
+  starter(2, 4, 6, 100, true, 20);
+
+  cout << endl << endl 
+       << "Testing out-of-order insersions, with a high collisions rate."
+       << endl;
+  starter(2, 4, 6, 100, false, 10);
+
+  cout << endl << endl 
+       << "Testing out-of-order insersions, with a low collisions rate."
+       << endl;
+  starter(2, 4, 6, 100, false, 20);
 }
