@@ -4,7 +4,12 @@
 #include <string>
 #include <queue>
 
-#include "lock_free_skip_list.hpp"
+#include "callback.hpp"
+#include "http_request.hpp"
+#include "http_response.hpp"
+#include "kv_connection.hpp"
+#include "kv_service.hpp"
+#include "service_manager.hpp"
 #include "test_util.hpp"
 #include "thread.hpp"
 #include "timer.hpp"
@@ -15,31 +20,66 @@ namespace {
 
 using base::Callback;
 using base::makeCallableMany;
+using base::makeCallableOnce;
 using base::makeThread;
+using base::ServiceManager;
 using base::Timer;
-using lock_free::LockFreeSkipList;
+using http::Request;
+using http::Response;
+using kv::KVClientConnection;
+using kv::KVService;
+using std::cout;
+using std::endl;
 using std::queue;
 using std::random_shuffle;
 using std::string;
-using test::Counter;
 
 struct Tester {
-  LockFreeSkipList<int>* list_;
+public:
+  ServiceManager service(4);
+  KVService kv_service(1500, &service);
+  pthread_t service_thread;
 
-  Tester(LockFreeSkipList<int>* skip_list) : list_(skip_list) { }
+  Tester() {
+      //kv_service(KVService(1500, &service)) { 
+    //service_thread = makeThread(makeCallableOnce(&ServiceManager::run, &service));
+  }
+
   ~Tester() { }
+
+  void connect(int key) {
+    KVClientConnection* c1;
+    kv_service.connect("127.0.0.1", 15001, &c1);
+    if (!c1->ok()) {
+      cout << "Could not connect to 127.0.0.1/15001" << endl;
+      cout << "Connection 1: " << c1->errorString() << endl;
+      exit(1);
+    }
+
+    string key_string;
+    std::stringstream convt;
+    convt << key;
+    key_string = convt.str();
+
+    Request req1;
+    Response *resp1;
+    req1.method = "GET";
+    req1.address = "/" + key;
+    req1.version = "HTTP/1.1";
+    c1->send(&req1, &resp1);
+  }
 
   void skipListTester(int start, int* ops, int loop_count) {
     for (int i = start; i < start + loop_count; i++)
-      list_->add(ops[i], 0);
+      connect(ops[i]);
   }
 };
 
-int* createOperations(int count, bool in_order) {
+int* createOperations(int count, bool in_order, int max) {
   int* array = new int[count];
 
   for (int i = 0; i < count; i++)
-    array[i] = i;
+    array[i] = i % max;
 
   if (!in_order)
     random_shuffle(array, array + count);
@@ -51,13 +91,12 @@ void printTimers() {
   
 }
 
-Timer* runTests(int thread_count, int loop_count, bool in_order) {
-  LockFreeSkipList<int> skip_list;
-  Tester tester(&skip_list);
+Timer* runTests(int thread_count, int loop_count, bool in_order, int max) {
+  Tester tester();
   Timer* timer = new Timer();
   queue<pthread_t> threads;
   Callback<void>* cb_wrapper;
-  int* values = createOperations(loop_count * thread_count, in_order);
+  int* values = createOperations(loop_count * thread_count, in_order, max);
 
   timer->start();
 
