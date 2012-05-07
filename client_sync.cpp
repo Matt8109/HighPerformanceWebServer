@@ -25,9 +25,9 @@ int main() {
   pthread_t tid = makeThread(makeCallableOnce(&ServiceManager::run, &service));
 
   HTTPClientConnection* c1;
-  http_service.connect("127.0.0.1", 15001, &c1);
+  http_service.connect("127.0.0.1", 15000, &c1);
   HTTPClientConnection* c2;
-  http_service.connect("127.0.0.1", 15001, &c2);
+  http_service.connect("127.0.0.1", 15000, &c2);
   if (!c1->ok() || !c2->ok()) {
     cout << "Could not connect to 127.0.0.1/15001" << endl;
     cout << "Connection 1: " << c1->errorString() << endl;

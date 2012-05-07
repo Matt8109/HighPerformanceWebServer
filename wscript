@@ -279,7 +279,11 @@ def build(bld):
                       source = 'kv_benchmark.cpp',
                       includes = '.. .',
                       uselib = '',
-                      uselib_local = 'concurrency',
+                      uselib_local = """ kv_server
+                                         http_server
+                                         net_server
+                                         concurrency
+                                     """,
                       target = 'kv_benchmark',
                     )
 
