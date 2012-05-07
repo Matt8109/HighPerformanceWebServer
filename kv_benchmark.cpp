@@ -40,7 +40,7 @@ struct Tester {
   pthread_t service_thread;
 
   Tester()
-    : service(8),
+    : service(4),
       kv_service(15000, &service),
       service_thread(makeThread(makeCallableOnce(&ServiceManager::run, 
                                                  &service))) { 
@@ -141,7 +141,7 @@ struct Tester {
 
     cout << timer_one->elapsed() << "  |  "
          << timer_two->elapsed() << "  |  "
-         << timer_three->elapsed() << "  |  "
+         << timer_three->elapsed() 
          << endl;
 
     delete timer_one;
@@ -153,8 +153,7 @@ struct Tester {
 } // unamed namespace
 
 int main(int argc, char* argv[]) {
-
-
   Tester test;
-  test.connect(4);
+  test.testStarter(1, 2, 4, 100, false, 20);
+ // test.connect(4);
 }
