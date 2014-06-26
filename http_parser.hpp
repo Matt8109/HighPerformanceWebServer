@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef MCP_HTTP_PARSER_HEADER
 #define MCP_HTTP_PARSER_HEADER
 

@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include "buffer.hpp"
 #include "http_request.hpp"
 

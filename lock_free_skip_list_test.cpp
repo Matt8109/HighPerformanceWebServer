@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #define LOOP_COUNT 100
 #define THREAD_COUNT 5
 

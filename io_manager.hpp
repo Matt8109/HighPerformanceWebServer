@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef MCP_BASE_IO_MANAGER_HEADER
 #define MCP_BASE_IO_MANAGER_HEADER
 

@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef DISTRIB_BASE_SERVER_STAT_BUFF_HEADER
 #define DISTRIB_BASE_SERVER_STAT_BUFF_HEADER
 

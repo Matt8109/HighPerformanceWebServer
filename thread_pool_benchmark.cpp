@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #define THREAD_COUNT_SM 2 //small test size
 #define THREAD_COUNT_MD 8 // medium test size
 #define THREAD_COUNT_LG 20 // large test size

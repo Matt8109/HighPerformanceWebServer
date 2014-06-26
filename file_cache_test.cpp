@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>

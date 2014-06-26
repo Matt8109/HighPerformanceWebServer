@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include <inttypes.h>
 #include <limits>
 #include "test_unit.hpp"

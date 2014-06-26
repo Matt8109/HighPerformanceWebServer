@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include <cstdio>   // perror
 #include <unistd.h> // pipe, fork, close, dup2
 

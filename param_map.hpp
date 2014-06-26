@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef MCP_BASE_PARAM_MAP_HEADER
 #define MCP_BASE_PARAM_MAP_HEADER
 

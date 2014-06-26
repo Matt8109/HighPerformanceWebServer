@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef MCP_CIRCULAR_BUFFER_HEADER
 #define MCP_CIRCULAR_BUFFER_HEADER
 

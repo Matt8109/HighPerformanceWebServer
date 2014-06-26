@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef MCP_LOCK_FREE_LIST_HEADER
 #define MCP_LOCK_FREE_LIST_HEADER
 

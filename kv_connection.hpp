@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef MCP_KV_CONNECTION_HEADER
 #define MCP_KV_CONNECTION_HEADER
 

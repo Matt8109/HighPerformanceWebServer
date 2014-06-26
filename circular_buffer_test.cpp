@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include "circular_buffer.hpp"
 #include "test_unit.hpp"
 

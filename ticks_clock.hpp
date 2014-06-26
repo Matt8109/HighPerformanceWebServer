@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #ifndef DISTRIB_BASE_TICKS_CLOCK_HEADER
 #define DISTRIB_BASE_TICKS_CLOCK_HEADER
 

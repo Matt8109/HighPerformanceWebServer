@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #define CORE_COUNT 8 //the number of cores you have/threads to create
 
 #include "thread_pool_normal.hpp"

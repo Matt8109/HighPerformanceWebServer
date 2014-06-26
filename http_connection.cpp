@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include <fcntl.h>    // O_RDONLY
 #include <stdio.h>    // perror
 #include <stdlib.h>   // exit

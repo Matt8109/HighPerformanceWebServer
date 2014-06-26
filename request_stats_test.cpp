@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #define HIT_COUNT 2000
 #define THREADS 4
 

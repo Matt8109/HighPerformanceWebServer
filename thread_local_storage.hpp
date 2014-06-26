@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 // Cross Platform Thread Local Storage Class Using pthreads
 // From: http://alex.tapmania.org/2011/03/simple-thread-local-storage-with-pthreads.html
 // Accessed: Mar 26, 2012

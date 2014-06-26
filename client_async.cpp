@@ -1,3 +1,6 @@
+// Code copyright Alberto Lerner and Matthew Mancuso
+// See git blame for details
+
 #include "callback.hpp"
 #include "http_connection.hpp"
 #include "http_response.hpp"
