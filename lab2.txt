@@ -1,3 +1,5 @@
+// Copyright Alberto Lerner
+
 Lab 2
 
 Suppose we're in a HTTP server and a given document is requested quite

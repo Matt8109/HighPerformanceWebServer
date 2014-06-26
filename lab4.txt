@@ -1,3 +1,5 @@
+// Copyright Alberto Lerner
+
 Lab 4
 
 Imagine a busy server responding to HTTP (or other protocol)

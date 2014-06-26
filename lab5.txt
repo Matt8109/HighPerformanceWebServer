@@ -1,3 +1,5 @@
+// Copyright Alberto Lerner
+
 Lab 5
 
 One way to look at our HTTP machinery is this: the

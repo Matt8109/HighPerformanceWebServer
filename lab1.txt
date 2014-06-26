@@ -1,3 +1,5 @@
+// Copyright Alberto Lerner
+
 Lab1
 
 The goal of this lab is to develop and experiment with thread

@@ -1,3 +1,5 @@
+// Copyright Alberto Lerner
+
 MCP'12 - Warm-up lab
 
 Your job is to implement data structures #1 and #2, below. Their
